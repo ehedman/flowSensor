@@ -27,7 +27,7 @@ This application is far from complete buit basic funstions are in place now in A
 - ARM Cross delevopment tools for the Pico (apt install gcc-arm-none-eabi)
 - [Pico SDK](https://github.com/raspberrypi/pico-sdk)
 - [PIco SDK reference manual](https://datasheets.raspberrypi.org/pico/raspberry-pi-pico-c-sdk.pdf)
-- [Waveshare SDK](https://www.waveshare.com/w/upload/2/28/Pico_code.7z)
+- [Waveshare SDK](https://www.waveshare.com/w/upload/0/06/Pico-LCD-1.14.zip)
 
 ### Screenshot
 Soon
