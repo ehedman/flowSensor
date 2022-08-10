@@ -37,7 +37,7 @@ extern time_t _time();
 
 #define WIFI_COUNTRY    CYW43_COUNTRY_SWEDEN
 #define WIFI_SSID       "sy-madonna-24"
-#define WIFI_PASS       "090a0b0c0d"
+#define WIFI_PASS       "XXXXXXX"
 #define NTP_SERVER      "192.168.4.3"
 #define TZ_CET          0   /* 3600*2      // Add two hours to RTC UTC */
 #define time(a)         _time(a)    // Use our time() to get current epoch from RTC

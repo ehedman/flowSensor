@@ -472,7 +472,7 @@ void water_ctrl(void)
 
     printf("Update flash data\n");
     strcpy(pdata.ssid, "sy-madonna-24");
-    strcpy(pdata.pass, "090a0b0c0d");
+    strcpy(pdata.pass, "XXXXXXXX");
     strcpy(pdata.ntp_server, "sy-madonna.madonna.lan");
     pdata.country = CYW43_COUNTRY_SWEDEN;
     pdata.version = atof(VERSION);
