@@ -1,7 +1,5 @@
-# flowSensor
-Marine water flow sensor
-
-This application is far from complete buit basic funstions are in place now in Aug 2022.
+# Raspberry Pi Pico W flowSensor and Meter
+Marine water flow sensor and meter
 
 ### Hardware used
 - Raspberry Pi Pico W
@@ -9,10 +7,10 @@ This application is far from complete buit basic funstions are in place now in A
 - Waveshare 1.14" color display
 - A water flow sensor
 
-
 ### Some existing or furutre features
 - Filter capacity life monitor in litres
-- Filter elapse time monitor up to one year
+- Filter elapse time monitor up to 6 month
+- Monitor total flow through filter
 - Monitor volume / time
 - Near end of filter life alert
 - End of filter life alert
