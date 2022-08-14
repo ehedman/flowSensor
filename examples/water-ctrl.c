@@ -75,6 +75,10 @@
 #define LOW_PWM             4
 #define HDR_OK              GREEN
 #define HDR_ERROR           0xF8C0  // Reddish
+#define HDR_INFO            YELLOW
+
+#define LCD_HEIGHT          LCD_1IN14_HEIGHT
+#define LCD_WIDTH           LCD_1IN14_WIDTH
 
 #define POLLRATE            250     // Main loop interval in ms
 
@@ -83,9 +87,7 @@
  * SENS_FQC from sensors datasheet (F) or better
  * messured in actual installation environment.
  */
-#define SENS_FQC    11.00           // Pulse Characteristics: F=7.8 x Q (Rate of flow (Q) in litres/min)
-//#define PUPM_CAPM   5.2             // Pump Litres per minute
-//#define VOLTICK     (PUPM_CAPM/60)/(PUPM_CAPM*SENS_FQC) // Volume per sessTick @ 1 HAL pulse
+#define SENS_FQC    11.00           // Pulse Characteristics: F=11.00 x Q (Rate of flow (Q) in litres/min)
 
 static UWORD *BlackImage;
 static char HdrStr[100]     = { "Header" };
@@ -107,6 +109,12 @@ static const uint8_t JsOk =         3;
  */
 static const uint8_t TestButt =     15;
 static const uint8_t ResetButt =    17;
+
+/**
+ * Use this GPIO pin to wake us up from dormant.
+ * Could be connected directly to the HzmeasurePin
+ */
+static const uint8_t dormantPin =   2;
 
 /**
  * FLow sesnsing
@@ -140,9 +148,10 @@ static void printHdr(const char *format , ...)
 
     // Center align and trim with white spaces
     int padlen = (MAX_CHAR - strlen(txt)) / 2;
-    sprintf(HdrStr, "%*s%s%*s", padlen, "", txt, padlen, "");
-  
-    Paint_DrawString_EN(4, 0, HdrStr, &FONT, HdrTxtColor, BLACK);
+    sprintf(HdrStr, "%*s%s%*s", padlen, "", txt, 0, "");
+
+    Paint_DrawRectangle(0,0,LCD_HEIGHT,FONT_PADDING,HdrTxtColor, DOT_PIXEL_1X1,DRAW_FILL_FULL);
+    Paint_DrawString_EN(0, 0, HdrStr, &FONT, HdrTxtColor, BLACK);
 
     // Refresh the picture in RAM to LCD
     LCD_1IN14_Display(BlackImage);
@@ -170,6 +179,7 @@ void printLog(const char *format , ...)
         FirstLogline = false;
     }
 
+    // To stdio serial also
     printf("%s\n", buf);
 
     for (curLine=0; curLine <MAX_LINES; curLine++) {
@@ -190,8 +200,9 @@ void printLog(const char *format , ...)
 
     // Print header and text
     for (curLine=0; curLine <MAX_LINES; curLine++) {
-            if (curLine == 0) { // Plug in the header first
-                Paint_DrawString_EN(4, 0, HdrStr, &FONT, HdrTxtColor, BLACK);
+            if (curLine == 0) { // Plug in the header first             
+                Paint_DrawRectangle(0,0,LCD_HEIGHT,FONT_PADDING, HdrTxtColor, DOT_PIXEL_1X1,DRAW_FILL_FULL);
+                Paint_DrawString_EN(0, 0, HdrStr, &FONT, HdrTxtColor, BLACK);
             }
             if (lines[curLine][0] != (unsigned char)0x0) {
                 Paint_DrawString_EN(1, (curLine+1)*FONT_PADDING, lines[curLine], &FONT, WHITE, BLACK);
@@ -226,7 +237,7 @@ static int initDisplay(void)
     LCD_1IN14_Init(HORIZONTAL);
     LCD_1IN14_Clear(WHITE);
 
-    UDOUBLE Imagesize = LCD_1IN14_HEIGHT*LCD_1IN14_WIDTH*2;
+    UDOUBLE Imagesize = LCD_HEIGHT*LCD_WIDTH*2;
 
     if((BlackImage = (UWORD *)malloc(Imagesize)) == NULL) {
         return -1;
@@ -344,35 +355,35 @@ static void core1Thread(void)
 
 }
 
-#if 0
-int goDormant()
+
+static void goDormant()
 {
 
-    printf("Hello Dormant!\n");
+    time_t curtime = time();
 
-    printf("Switching to XOSC\n");
+    printf("Enter dormant mode at %s\n", ctime(&curtime));
+
+    return;     // Not yet fully functional
+
+    // Switching to XOSC
     uart_default_tx_wait_blocking();
 
     // UART will be reconfigured by sleep_run_from_xosc
     sleep_run_from_xosc();
 
-    printf("Running from XOSC\n");
+    // Running from XOSC
     uart_default_tx_wait_blocking();
 
-    printf("XOSC going dormant\n");
+    // XOSC going dormant
     uart_default_tx_wait_blocking();
 
-    // Go to sleep until we see a high edge on GPIO 10
-    sleep_goto_dormant_until_edge_high(22);
+    // Go to sleep until we see a high edge on GPIO dormantPin
+    sleep_goto_dormant_until_edge_high(dormantPin);
 
-    uint i = 0;
-    while (1) {
-        printf("XOSC awake %d\n", i++);
-    }
+    curtime = time();
+    printf("Resuming from dormant at %s\n", ctime(&curtime)); 
 
-    return 0;
 }
-#endif
 
 /**
  * Main control loop.
@@ -393,7 +404,7 @@ static void waterCtrlInit(void)
     DEV_SET_PWM(DEF_PWM);
 
     // Splash screen
-    Paint_DrawImage(water_crane_map,0,0,240,135);
+    Paint_DrawImage(water_crane_map,0,0,LCD_HEIGHT,LCD_WIDTH);
     Paint_DrawString_EN(2, 118, VERSION , &Font16, WHITE, BLACK);
     Paint_DrawString_EN(60, 118, qstr , &Font16, WHITE, BLACK);
     LCD_1IN14_Display(BlackImage);
@@ -416,7 +427,7 @@ static void waterCtrlInit(void)
 #if 0
     while(1) {
         sleep_ms(250);
-        printLog("FlowFreq=%d", FlowFreq);
+        printLog("FlowFreq=%d", FlowFreq);  // Flow test
     }
 #endif
 
@@ -436,13 +447,17 @@ static void waterCtrlInit(void)
 /**
  * This is the "main" entry
  */
-
 void water_ctrl(void)
 {
-    time_t curtime;
+    static time_t curtime;
     static struct tm *info_t;
     static char buffer_t[40];
     float volTick = 0.0;
+    float sessLitre = 0.0;
+    float litreMinute = 0.0;
+    int delSave = 0;
+    bool doSave = false;
+    int inactivityTimer = INACTIVITY_TIME;
     int tmo;
 
     stdio_init_all();
@@ -450,57 +465,59 @@ void water_ctrl(void)
     memset(&pdata, 0, sizeof(persistent_data));
 
     read_flash(&pdata);
-    printf("Current persitent data:\n  ssid  = %s\n  pass = %s\n  country = %d\n  ntp server = %s\n  totVolume = %.2f\n  FQ = %.2f  version = %.2f\n",
-        pdata.ssid, pdata.pass, pdata.country, pdata.ntp_server, pdata.totVolume, pdata.sensFq, pdata.version);
 
-    if (pdata.sensFq == 0.0) {
+    if (pdata.sensFq <= 0.0 || pdata.sensFq > 14.00 ) {
         pdata.sensFq = SENS_FQC;
         printf("Using default value for FQ: %.2f\n", SENS_FQC);
     }
 
+    printf("Current persitent data:\n  ssid  = %s\n  pass = %s\n  country = %d\n  ntp server = %s\n  totVolume = %.2f\n  FQ = %.2f\n  filterAge to = %s\n",
+        pdata.ssid, pdata.pass, pdata.country, pdata.ntp_server, pdata.totVolume, pdata.sensFq, ctime(&pdata.filterAge));
+
     volTick = (1.0/60)/pdata.sensFq;
 
 
-#if 0
+#if NETRTC
     if (wifi_connect(pdata.ssid, pdata.pass, pdata.country)) {
         printf("WiFi connection failed\n");
     } else {
         wifi_ntp(pdata.ntp_server);
+        for (int i = 0; i < 20; i++) {
+            sleep_ms(1000);
+            if (rtcIsSet == true) {
+                curtime = time(NULL);
+                printf("Current NTP/RTC time = %s", ctime(&curtime));
+                rtcIsSet = false;
+                break;
+            } else if (i >= 9) {
+                curtime = time(NULL);
+                printf("No NTP data to set RTC. Using RTC clock %s\n", ctime(&curtime));
+            }
+        }
     }
+#else
+    curtime = time(NULL);
+    printf("Current FAKE time = %s\n", ctime(&curtime));
 #endif
-   
+
+    if (pdata.filterAge <= 0) {
+        pdata.filterAge = time(NULL) + SDAY; // Add a day to start with
+    }
 
     printf("Update flash data\n");
-    strcpy(pdata.ssid, "sy-madonna-24");
-    strcpy(pdata.pass, "XXXXXXXX");
-    strcpy(pdata.ntp_server, "sy-madonna.madonna.lan");
-    pdata.country = CYW43_COUNTRY_SWEDEN;
+    strcpy(pdata.ssid, WIFI_SSID);
+    strcpy(pdata.pass,WIFI_PASS);
+    strcpy(pdata.ntp_server, NTP_SERVER);
+    pdata.country = WIFI_COUNTRY;
     pdata.version = atof(VERSION);
-    pdata.filterLifetime = 1659942989 + 31536000;   // Fake for now
-    pdata.tankVolume = 725.0;   // Fake for now
+    pdata.tankVolume = TANK_VOLUME;
     write_flash(&pdata);
 
-    info_t = localtime( &pdata.filterLifetime);
-    strftime(buffer_t, sizeof(buffer_t), "%m/%d/%y", info_t);
-
-/*
-    sleep_ms(2000);
-
-    for (int i = 0; i < 1; i++) {
-    sleep_ms(10000);
-    curtime = time(NULL) + TZ_CET;
-    printf("Current time = %s", ctime(&curtime));
-
-    }  
-
     wifi_disconnect();
-*/
 
-    waterCtrlInit();  
+    waterCtrlInit(); 
 
     tmo = 3;
-    float sessLitre = 0.0;
-    float litreMinute; 
    
     while (1) {
 
@@ -509,20 +526,19 @@ void water_ctrl(void)
         while(1) {
 
             if (FlowFreq > 0) {          
-                static int lastHz;
                 litreMinute = (FlowFreq * 1 / pdata.sensFq);
                 sessLitre = (sessTick * volTick);
 
-                //if (lastHz != FlowFreq) {
-                    clearLog(HDR_OK);
-                    printHdr("Flowing");
-                    printf("FlowFreq=%dHz\n", FlowFreq);
-                    printLog("FLOW=%.2f L/M", litreMinute);
-                    printLog("USED=%.2f L", sessLitre + pdata.totVolume);
-                //}
-                lastHz = FlowFreq;
+                clearLog(HDR_OK);
+                printHdr("Flowing");
+                printf("FlowFreq=%dHz\n", FlowFreq);
+                printLog("FLOW=%.2f L/M", litreMinute);
+                printLog("USED=%.2f L", sessLitre + pdata.totVolume);
+
             } else if (tmo-- <= 0) {
-                clearLog(HDR_ERROR);
+                info_t = localtime( &pdata.filterAge);
+                strftime(buffer_t, sizeof(buffer_t), "%m/%d/%y", info_t);
+                clearLog(HDR_INFO);
                 printHdr("No FLow");
                 printLog("USE=%.2fL", pdata.totVolume + sessLitre);
                 printLog("REM=%.0fL", pdata.tankVolume - (pdata.totVolume + sessLitre));
@@ -538,38 +554,124 @@ void water_ctrl(void)
 
         if (sessLitre > 0.0) {
             pdata.totVolume += sessLitre;
-            if (write_flash(&pdata)) {
-                printLog("S-ERROR");
-                sleep_ms(1000);
-            }
+            pdata.filterVolume += sessLitre;
             sessLitre = sessTick = 0;
+            delSave = 120;  // Assuming reuse anytime soon
+            doSave = true;  // .. so don't be to agressive to save to flash
         }
-       
-        //goDormant();
+
         while (FlowFreq == 0) {
 
             sleep_ms(1000);
+
+            DEV_SET_PWM(0); 
+
+            if (--inactivityTimer == 0) {
+                //goDormant();    // Save some more energy
+                inactivityTimer = INACTIVITY_TIME;
+                //break;  // We do have flow now
+            }
+
+            if (doSave == true && delSave-- == 0) { // Avoid repeated saves for rapid events
+                printf("Delayed save\n");
+                if (write_flash(&pdata)) {
+                    printf("Delayed save failed\n");
+                }
+                doSave = false;
+                delSave = 0;
+            }
+            
 #if 0
             DEV_SET_PWM(DEF_PWM);
-            printLog("BUTT=%d", gpio_get(TestButt));
+            printLog("BUTT=%d", gpio_get(JsLeft));
             sleep_ms(2000);
+            continue;
 #else
-            if (!gpio_get(TestButt)) {
-                clearLog(HDR_ERROR);
-                printHdr("Stats");
+            if (!gpio_get(JsRight)) {       // Adjust filter expiration date +
+                curtime = time(NULL);
+                clearLog(HDR_INFO);
+                printHdr("FLT INC DATE");
+                if (pdata.filterAge < curtime+S6MONTH) { // Don't move to far
+                    pdata.filterAge += SMONTH; // Add a month
+                } else {                 
+                    pdata.filterAge = curtime+S6MONTH;  // Max
+                }
+
+                info_t = localtime(&pdata.filterAge);
+                strftime(buffer_t, sizeof(buffer_t), "%m/%d/%y", info_t);
+                DEV_SET_PWM(DEF_PWM);
+                printLog("FXD=%s", buffer_t);
+                sleep_ms(1000);
+                delSave = 10;
+                doSave = true;
+                continue;
+            }
+
+            if (!gpio_get(JsLeft)) {        // Adjust filter expiration date -
+                curtime = time(NULL);
+                clearLog(HDR_INFO);
+                printHdr("FLT DEC DATE");
+                if (pdata.filterAge > curtime +SMONTH) { // Don't move back in time
+                    pdata.filterAge -= SMONTH;
+                } else {
+                    pdata.filterAge = curtime +SDAY; // Add a day fromn now
+                }
+                info_t = localtime( &pdata.filterAge);
+                strftime(buffer_t, sizeof(buffer_t), "%m/%d/%y", info_t);
+                DEV_SET_PWM(DEF_PWM);
+                printLog("FXD=%s", buffer_t);
+                sleep_ms(1000);
+                delSave = 10;
+                doSave = true;
+                continue;
+            }
+
+            if (!gpio_get(JsOk)) {                  // Reset filter data (filter replaced)
+                clearLog(HDR_INFO);
+                printHdr("NEW FILTER");
+                printLog("New period");
+                pdata.filterAge = time(NULL) + FLTR_LIFETIME;
+                pdata.filterVolume = 0.0;
+                info_t = localtime( &pdata.filterAge);
+                strftime(buffer_t, sizeof(buffer_t), "%m/%d/%y", info_t);
+                DEV_SET_PWM(DEF_PWM);
+                printLog("FXD=%s", buffer_t);
+                printLog("FLV=0.0");
+                sleep_ms(2000);
+                delSave = 1;
+                doSave = true;
+                continue;
+            }
+ 
+            if (!gpio_get(TestButt)) {              // Show statistics
+                clearLog(HDR_INFO);
+                printHdr("STATUS");
                 DEV_SET_PWM(DEF_PWM);
                 printLog("USE=%.2fL", pdata.totVolume);
                 printLog("REM=%.0fL", pdata.tankVolume - pdata.totVolume);
                 printLog("FXD=%s", buffer_t);
-                printLog("FQ = %.2f", pdata.sensFq);
+                printLog("FLV=%.2f", pdata.filterVolume);
                 sleep_ms(10000);
+
+                if (pdata.filterAge < time(NULL)) {
+                    clearLog(HDR_ERROR);
+                    printHdr("FILTER past FXD");
+                    printLog("FLTR past FXD");
+                    sleep_ms(5000);
+                } else if (pdata.filterAge - SWEEK*2 < time(NULL)) {
+                    clearLog(HDR_INFO);
+                    printHdr("FILTER AGING");
+                    printLog("FLTR near FXD");
+                    sleep_ms(5000);
+                }
                 continue;
             }
 
-            if (!gpio_get(JsUp)) {
-                clearLog(HDR_ERROR);
+            if (!gpio_get(JsUp)) {              // Fine-tune the sensors' Q value +
+                clearLog(HDR_INFO);
                 printHdr("FQ INC");
                 pdata.sensFq += 0.50;
+                volTick = (1.0/60)/pdata.sensFq;
                 DEV_SET_PWM(DEF_PWM);
                 printLog("Adj FQ + 0.50");
                 printLog("New FQ = %.2f", pdata.sensFq);
@@ -577,10 +679,11 @@ void water_ctrl(void)
                 continue;
             }
 
-            if (!gpio_get(JsDown) && pdata.sensFq > 0.50) {
-                clearLog(HDR_ERROR);
+            if (!gpio_get(JsDown) && pdata.sensFq > 0.50) {     // Fine-tune the sensors' Q value -
+                clearLog(HDR_INFO);
                 printHdr("FQ DEC");
                 pdata.sensFq -= 0.50;
+                volTick = (1.0/60)/pdata.sensFq;
                 DEV_SET_PWM(DEF_PWM);
                 printLog("Adj FQ - 0.50");
                 printLog("New FQ = %.2f", pdata.sensFq);
@@ -588,18 +691,17 @@ void water_ctrl(void)
                 continue;
             }
 
-            if (!gpio_get(ResetButt)) {
+            if (!gpio_get(ResetButt)) {         // Reset total volume and restart this app
                 clearLog(HDR_ERROR);
-                printHdr("Reset");
+                printHdr("RESET");
                 DEV_SET_PWM(DEF_PWM);
-                pdata.totVolume = 0;
+                pdata.totVolume = 0.0;
                 if (write_flash(&pdata)) {
-                    printLog("R-ERROR");
+                    printLog("SAVE-ERROR");
                 } else {
                     printLog("Reset OK");
                 }
                
-
                 if (FirmwareMode == true) {
                     printLog("Go Firmware");
                     sleep_ms(1000);
@@ -613,8 +715,6 @@ void water_ctrl(void)
                 while(1);
 
             }
-
-            DEV_SET_PWM(0);
 #endif
         }
 

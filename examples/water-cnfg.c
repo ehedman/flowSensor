@@ -32,15 +32,16 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdarg.h>
+#include <time.h>
 #include <pico/stdlib.h>
 #include <hardware/irq.h>
-#include "hardware/i2c.h"
-#include "hardware/flash.h"
-#include "hardware/sync.h"
-#include "pico/util/datetime.h"
+#include <hardware/i2c.h>
+#include <hardware/flash.h>
+#include <hardware/sync.h>
+#include <pico/util/datetime.h>
 #include "water-ctrl.h"
 #include <pico/cyw43_arch.h>
-#include <time.h>
+
 #include "lwip/dns.h"
 #include "lwip/pbuf.h"
 #include "lwip/udp.h"
@@ -51,17 +52,6 @@
 #define NTP_TEST_TIME (30 * 1000)
 #define NTP_RESEND_TIME (10 * 1000)
 
-/**
- * Global i.o properties
- */
-typedef struct {
-    uint8_t iacBuf[256];
-    int iacIndx;
-    bool lineMode;
-    bool doEcho;
-} serial;
-static serial io;
-
 typedef struct NTP_T_ {
     ip_addr_t ntp_server_address;
     bool dns_request_sent;
@@ -69,6 +59,8 @@ typedef struct NTP_T_ {
     absolute_time_t ntp_test_time;
     alarm_id_t ntp_resend_alarm;
 } NTP_T;
+
+bool rtcIsSet = false;
 
 /**
  * We're going to erase and reprogram a region 512k from the start of flash.
@@ -206,7 +198,7 @@ static void ds3231Init(void)
 	    gpio_set_function(I2C_SCL,GPIO_FUNC_I2C);
 	    gpio_pull_up(I2C_SDA);
 	    gpio_pull_up(I2C_SCL);
-	    ds3231InitStatus = 1;
+	    //ds3231InitStatus = 1;
     }
 }
 
@@ -238,31 +230,31 @@ static void ds3231SetTime(struct tm *utc)
 	//set second
 	tbuf[0]=0x00;
 	tbuf[1]=decimal_to_bcd(utc->tm_sec);
-	i2c_write_blocking(I2C_PORT,ds3231_addr,tbuf,2,false);
+	i2c_write_blocking(I2C_PORT,DS3231_ADDR,tbuf,2,false);
 	//set minute
 	tbuf[0]=0x01;
 	tbuf[1]=decimal_to_bcd(utc->tm_min);
-	i2c_write_blocking(I2C_PORT,ds3231_addr,tbuf,2,false);
+	i2c_write_blocking(I2C_PORT,DS3231_ADDR,tbuf,2,false);
 	//set hour
 	tbuf[0]=0x02;
 	tbuf[1]=decimal_to_bcd(utc->tm_hour+2);
-	i2c_write_blocking(I2C_PORT,ds3231_addr,tbuf,2,false);
+	i2c_write_blocking(I2C_PORT,DS3231_ADDR,tbuf,2,false);
 	//set weekday
 	tbuf[0]=0x03;
 	tbuf[1]=decimal_to_bcd(utc->tm_wday);
-	i2c_write_blocking(I2C_PORT,ds3231_addr,tbuf,2,false);
+	i2c_write_blocking(I2C_PORT,DS3231_ADDR,tbuf,2,false);
 	//set day
 	tbuf[0]=0x04;
 	tbuf[1]=decimal_to_bcd(utc->tm_mday);
-	i2c_write_blocking(I2C_PORT,ds3231_addr,tbuf,2,false);
+	i2c_write_blocking(I2C_PORT,DS3231_ADDR,tbuf,2,false);
 	//set month
 	tbuf[0]=0x05;
 	tbuf[1]=decimal_to_bcd(utc->tm_mon +1);
-	i2c_write_blocking(I2C_PORT,ds3231_addr,tbuf,2,false);
+	i2c_write_blocking(I2C_PORT,DS3231_ADDR,tbuf,2,false);
 	//set year
 	tbuf[0]=0x06;
 	tbuf[1]=decimal_to_bcd(utc->tm_year - 100);
-	i2c_write_blocking(I2C_PORT,ds3231_addr,tbuf,2,false);
+	i2c_write_blocking(I2C_PORT,DS3231_ADDR,tbuf,2,false);
 
 }
 
@@ -271,17 +263,17 @@ static void ds3231SetTime(struct tm *utc)
  */
 static time_t ds3231ReadTime() 
 {
-    struct tm utc;
+    static struct tm utc;
 	uint8_t val = 0; 
-    char  buf[10];
-	
+    static char  buf[10];
+
     ds3231Init();
 
     memset(&utc, 0, sizeof(struct tm));
     memset(buf, 0, sizeof(buf));
 
-	i2c_write_blocking(I2C_PORT,ds3231_addr,&val,1,true);
-	i2c_read_blocking(I2C_PORT,ds3231_addr,buf,7,false);
+	i2c_write_blocking(I2C_PORT,DS3231_ADDR,&val,1,true);
+	i2c_read_blocking(I2C_PORT,DS3231_ADDR,buf,7,false);
 
 	utc.tm_sec  = bcd_to_decimal(buf[0]);
     utc.tm_min  = bcd_to_decimal(buf[1]);;
@@ -291,7 +283,7 @@ static time_t ds3231ReadTime()
 	utc.tm_mon  = bcd_to_decimal(buf[5]) -1;
 	utc.tm_year = bcd_to_decimal(buf[6]) +100;
 	utc.tm_isdst = 0;
-    
+
     return mktime(&utc);;
 }
 
@@ -300,7 +292,13 @@ static time_t ds3231ReadTime()
  */
 time_t _time(time_t *tloc)
 {
-    return ds3231ReadTime();
+#if NETRTC
+    return ds3231ReadTime() + TZ_RZONE;
+#else
+    static int sec;
+    sec += 10;
+    return 1660411426 + sec;    // Fake time around Sat Aug 13 17:23 2022
+#endif
 }
 
 /**
@@ -321,6 +319,7 @@ static void ntp_result(NTP_T* state, int status, time_t *result) {
                utc->tm_hour, utc->tm_min, utc->tm_sec);
         printf("set RTC accordingly\n");
         set_rtc(utc);
+        rtcIsSet = true;
     }
 
     if (state->ntp_resend_alarm > 0) {
