@@ -1,0 +1,2 @@
+- Resolve pin (GPIO 20) conflict of Waveshare RTC and Display 1.4 
+- Wake up from dormant without performance degradation
