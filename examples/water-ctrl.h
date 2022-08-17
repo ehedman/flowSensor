@@ -4,7 +4,8 @@
 /**
  * For debugging
  */
-#define NETRTC 0        // Disable suport for network and RTC hat i.e, legacy pico mode.
+#define NETRTC      1       // 0 = Disable suport for network and RTC hat i.e, legacy pico mode.
+#define GO_DORMANT  0       // 1 = Currently woken up with reduced performance (clocks)
 #define __FILENAME__ (strrchr(__FILE__, '/') ? strrchr(__FILE__, '/') + 1 : __FILE__)
 
 /**
@@ -39,21 +40,19 @@ typedef struct p_data {
 /**
  * Common functions used in this app
  */
-extern void     printLog(const char *format , ...);
-extern int      wifi_connect(char *ssid, char *pass, uint32_t country);
-extern void     wifi_disconnect(void);
-extern void     wifi_ntp(char *server);
+extern bool     netNTP_connect(persistent_data *pdata);
+extern void     net_disconnect(void);
+extern bool     wifi_connect(char *ssid, char *pass, uint32_t country);
 extern void     read_flash(persistent_data *pdata);
-extern int      write_flash(persistent_data *new_data);
-extern bool     rtcIsSet;
+extern bool     write_flash(persistent_data *new_data);
 extern time_t   _time();
 
 #define PICO_CYW43_ARCH_THREADSAFE_BACKGROUND 1
 
 #define WIFI_COUNTRY    CYW43_COUNTRY_SWEDEN
 #define WIFI_SSID       "sy-madonna-24"
-#define WIFI_PASS       "XX"
-#define NTP_SERVER      "sy-madonna.madonna.lan"
+#define WIFI_PASS       "XXXX"
+#define NTP_SERVER      "192.168.4.3"
 
 #define TANK_VOLUME     725.00                      // Water tank volume
 

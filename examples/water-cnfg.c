@@ -41,10 +41,9 @@
 #include <pico/util/datetime.h>
 #include "water-ctrl.h"
 #include <pico/cyw43_arch.h>
-
-#include "lwip/dns.h"
-#include "lwip/pbuf.h"
-#include "lwip/udp.h"
+#include <lwip/dns.h>
+#include <lwip/pbuf.h>
+#include <lwip/udp.h>
 
 #define NTP_MSG_LEN 48
 #define NTP_PORT 123
@@ -60,7 +59,8 @@ typedef struct NTP_T_ {
     alarm_id_t ntp_resend_alarm;
 } NTP_T;
 
-bool rtcIsSet = false;
+static bool rtcIsSet = false;
+static bool netIsConnected = false;
 
 /**
  * We're going to erase and reprogram a region 512k from the start of flash.
@@ -95,12 +95,12 @@ void read_flash(persistent_data *pdata)
 /**
  * Write to flash if needed
  */
-int write_flash(persistent_data *new_data)
+bool write_flash(persistent_data *new_data)
 {
     static uint8_t flash_data[FLASH_PAGE_SIZE];
     uint8_t *ndata = (uint8_t *)new_data;
     uint32_t ints;
-    int rval = 0;  
+    bool rval = true;  
     uint8_t cs;
     static persistent_data old_data;
 
@@ -135,7 +135,7 @@ int write_flash(persistent_data *new_data)
 
     for (int i = 0; i < sizeof(persistent_data); ++i) {
         if (flash_data[i] != flash_target_contents[i])
-            rval = 1;
+            rval = false;
     }
 
     restore_interrupts(ints);
@@ -146,43 +146,46 @@ int write_flash(persistent_data *new_data)
 /**
  * Connect to AP
  */
-int wifi_connect(char *ssid, char *pass, uint32_t country)
+bool wifi_connect(char *ssid, char *pass, uint32_t country)
 {
+    int rval = 0;
+
+    if (netIsConnected == true) {
+        printf("Repeated connection request ignored\n");
+        return netIsConnected;
+    }
+
+    netIsConnected = false;
+
     ssid[SSID_MAX-1] = pass[PASS_MAX-1] = '\0';
 
     if (!ssid[strspn(ssid, OKCHAR)] == '\0') {
         printf("SSID contains illegal characters\n");
-        return 1;
+        return netIsConnected;
     }
 
     if (!pass[strspn(pass, OKCHAR)] == '\0') {
         printf("WPA2 password contains illegal characters\n");
-        return 1;
+        return netIsConnected;
     }
 
     printf("Attempt connection to %s with pass %s and country code %d\n", ssid, pass, country);
 
-    if (cyw43_arch_init_with_country(country)) {
-        printf("cyw43_arch_init_with_country failed: %s/%d/d\n", __FILENAME__, __LINE__, country);
-        return 1;
+    if ((rval = cyw43_arch_init_with_country(country))) {
+        printf("\ncyw43_arch_init_with_country failed: %s/%d/%d/%d\n", __FILENAME__, __LINE__, country, rval);
+        return netIsConnected;
     }
 
     cyw43_arch_enable_sta_mode();
 
-    if (cyw43_arch_wifi_connect_timeout_ms(ssid, pass, CYW43_AUTH_WPA2_AES_PSK, 20000)) {
-        printf("cyw43_arch_wifi_connect_timeout_ms failed: %s/%d/%s\n", __FILENAME__, __LINE__, ssid);
-        return 1;
+    if ((rval = cyw43_arch_wifi_connect_timeout_ms(ssid, pass, CYW43_AUTH_WPA2_AES_PSK, 30000))) {
+        printf("\ncyw43_arch_wifi_connect_timeout_ms failed: %s/%d/%s/%d\n", __FILENAME__, __LINE__, ssid, rval);
+        return netIsConnected;
     }
-    
-    return 0;
-}
 
-/**
- * De-init the network
- */
-void wifi_disconnect(void)
-{
-    cyw43_arch_deinit();
+    netIsConnected = true;
+
+    return netIsConnected;
 }
 
 /**
@@ -227,34 +230,34 @@ static void ds3231SetTime(struct tm *utc)
 
     ds3231Init();
 
-	//set second
-	tbuf[0]=0x00;
-	tbuf[1]=decimal_to_bcd(utc->tm_sec);
-	i2c_write_blocking(I2C_PORT,DS3231_ADDR,tbuf,2,false);
-	//set minute
-	tbuf[0]=0x01;
-	tbuf[1]=decimal_to_bcd(utc->tm_min);
-	i2c_write_blocking(I2C_PORT,DS3231_ADDR,tbuf,2,false);
-	//set hour
-	tbuf[0]=0x02;
-	tbuf[1]=decimal_to_bcd(utc->tm_hour+2);
-	i2c_write_blocking(I2C_PORT,DS3231_ADDR,tbuf,2,false);
-	//set weekday
-	tbuf[0]=0x03;
-	tbuf[1]=decimal_to_bcd(utc->tm_wday);
-	i2c_write_blocking(I2C_PORT,DS3231_ADDR,tbuf,2,false);
-	//set day
-	tbuf[0]=0x04;
-	tbuf[1]=decimal_to_bcd(utc->tm_mday);
-	i2c_write_blocking(I2C_PORT,DS3231_ADDR,tbuf,2,false);
-	//set month
-	tbuf[0]=0x05;
-	tbuf[1]=decimal_to_bcd(utc->tm_mon +1);
-	i2c_write_blocking(I2C_PORT,DS3231_ADDR,tbuf,2,false);
-	//set year
-	tbuf[0]=0x06;
-	tbuf[1]=decimal_to_bcd(utc->tm_year - 100);
-	i2c_write_blocking(I2C_PORT,DS3231_ADDR,tbuf,2,false);
+    //set second
+    tbuf[0]=0x00;
+    tbuf[1]=decimal_to_bcd(utc->tm_sec);
+    i2c_write_blocking(I2C_PORT,DS3231_ADDR,tbuf,2,false);
+    //set minute
+    tbuf[0]=0x01;
+    tbuf[1]=decimal_to_bcd(utc->tm_min);
+    i2c_write_blocking(I2C_PORT,DS3231_ADDR,tbuf,2,false);
+    //set hour
+    tbuf[0]=0x02;
+    tbuf[1]=decimal_to_bcd(utc->tm_hour+2);
+    i2c_write_blocking(I2C_PORT,DS3231_ADDR,tbuf,2,false);
+    //set weekday
+    tbuf[0]=0x03;
+    tbuf[1]=decimal_to_bcd(utc->tm_wday);
+    i2c_write_blocking(I2C_PORT,DS3231_ADDR,tbuf,2,false);
+    //set day
+    tbuf[0]=0x04;
+    tbuf[1]=decimal_to_bcd(utc->tm_mday);
+    i2c_write_blocking(I2C_PORT,DS3231_ADDR,tbuf,2,false);
+    //set month
+    tbuf[0]=0x05;
+    tbuf[1]=decimal_to_bcd(utc->tm_mon +1);
+    i2c_write_blocking(I2C_PORT,DS3231_ADDR,tbuf,2,false);
+    //set year
+    tbuf[0]=0x06;
+    tbuf[1]=decimal_to_bcd(utc->tm_year - 100);
+    i2c_write_blocking(I2C_PORT,DS3231_ADDR,tbuf,2,false);
 
 }
 
@@ -264,7 +267,7 @@ static void ds3231SetTime(struct tm *utc)
 static time_t ds3231ReadTime() 
 {
     static struct tm utc;
-	uint8_t val = 0; 
+    uint8_t val = 0; 
     static char  buf[10];
 
     ds3231Init();
@@ -272,16 +275,16 @@ static time_t ds3231ReadTime()
     memset(&utc, 0, sizeof(struct tm));
     memset(buf, 0, sizeof(buf));
 
-	i2c_write_blocking(I2C_PORT,DS3231_ADDR,&val,1,true);
-	i2c_read_blocking(I2C_PORT,DS3231_ADDR,buf,7,false);
+    i2c_write_blocking(I2C_PORT,DS3231_ADDR,&val,1,true);
+    i2c_read_blocking(I2C_PORT,DS3231_ADDR,buf,7,false);
 
-	utc.tm_sec  = bcd_to_decimal(buf[0]);
+    utc.tm_sec  = bcd_to_decimal(buf[0]);
     utc.tm_min  = bcd_to_decimal(buf[1]);;
     utc.tm_hour = bcd_to_decimal(buf[2]);
-	//utc.tm_wday = bcd_to_decimal(buf[3]);
-	utc.tm_mday = bcd_to_decimal(buf[4]);
-	utc.tm_mon  = bcd_to_decimal(buf[5]) -1;
-	utc.tm_year = bcd_to_decimal(buf[6]) +100;
+    //utc.tm_wday = bcd_to_decimal(buf[3]);
+    utc.tm_mday = bcd_to_decimal(buf[4]);
+    utc.tm_mon  = bcd_to_decimal(buf[5]) -1;
+    utc.tm_year = bcd_to_decimal(buf[6]) +100;
 	utc.tm_isdst = 0;
 
     return mktime(&utc);;
@@ -422,11 +425,14 @@ static NTP_T* ntp_init(void) {
 /**
  * Entry point for an NTP request
  */
-void wifi_ntp(char *ntp_server)
+static bool net_ntp(char *ntp_server)
 {   
+    bool rval = false;
+
     NTP_T *state = ntp_init();
     if (!state) {
-        return;
+        printf("ntp_init failed\n");
+        return rval;
     }
 
     ntp_server[URL_MAX-1] = '\0';
@@ -448,6 +454,7 @@ void wifi_ntp(char *ntp_server)
             state->dns_request_sent = true;
             if (err == ERR_OK) {
                 ntp_request(state); // Cached result
+                rval = true;
                 break;
             } else if (err != ERR_INPROGRESS) { // ERR_INPROGRESS means expect a callback
                 printf("dns request failed(%d)\n", i+1);
@@ -456,6 +463,45 @@ void wifi_ntp(char *ntp_server)
         }
     }
     free(state);
+
+    return rval;
+}
+
+bool netNTP_connect(persistent_data *pdata)
+{
+
+     if (netIsConnected == false) {
+
+        if (wifi_connect(pdata->ssid, pdata->pass, pdata->country) == false) {
+            return false;
+        } else {
+            if (net_ntp(pdata->ntp_server) == false) {
+                return false;
+            }
+            for (int i = 0; i < 20; i++) {
+                sleep_ms(1000);
+                if (rtcIsSet == true) {
+                    rtcIsSet = false;
+                    break;
+                } else if (i >= 18) {
+                    return false;
+                }
+            }
+        }
+    }
+
+    return true;
+}
+
+/**
+ * De-init the network
+ */
+void net_disconnect(void)
+{
+    if (netIsConnected == true) {
+        cyw43_arch_deinit();
+        netIsConnected = false;
+    }
 }
 
 
