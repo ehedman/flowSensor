@@ -38,12 +38,19 @@
 #include <hardware/i2c.h>
 #include <hardware/flash.h>
 #include <hardware/sync.h>
+#include <pico/sleep.h>
 #include <pico/util/datetime.h>
+#include "hardware/clocks.h"
+#include "hardware/rosc.h"
+#include "hardware/structs/scb.h"
 #include "water-ctrl.h"
 #include <pico/cyw43_arch.h>
 #include <lwip/dns.h>
 #include <lwip/pbuf.h>
 #include <lwip/udp.h>
+
+
+#include "lwip/tcp.h"
 
 #define NTP_MSG_LEN 48
 #define NTP_PORT 123
@@ -178,7 +185,7 @@ bool wifi_connect(char *ssid, char *pass, uint32_t country)
 
     cyw43_arch_enable_sta_mode();
 
-    if ((rval = cyw43_arch_wifi_connect_timeout_ms(ssid, pass, CYW43_AUTH_WPA2_AES_PSK, 30000))) {
+    if ((rval = cyw43_arch_wifi_connect_timeout_ms(ssid, pass, CYW43_AUTH_WPA2_AES_PSK, 10000))) {
         printf("\ncyw43_arch_wifi_connect_timeout_ms failed: %s/%d/%s/%d\n", __FILENAME__, __LINE__, ssid, rval);
         return netIsConnected;
     }
@@ -502,6 +509,85 @@ void net_disconnect(void)
         cyw43_arch_deinit();
         netIsConnected = false;
     }
+}
+
+static void measure_freqs(void)
+{
+
+    printf("usb=%lu\n", clock_get_hz(clk_usb));
+    printf("sys=%lu\n", clock_get_hz(clk_sys));
+    printf("peri=%lu\n", clock_get_hz(clk_peri));
+    printf("usb=%lu\n", clock_get_hz(clk_usb));
+    printf("adc=%lu\n", clock_get_hz(clk_adc));
+    printf("rtc=%lu\n", clock_get_hz(clk_rtc));
+
+}
+
+static void recover_from_sleep(uint scb_orig, uint clock0_orig, uint clock1_orig)
+{
+
+    //Re-enable ring Oscillator control
+    rosc_write(&rosc_hw->ctrl, ROSC_CTRL_ENABLE_BITS);
+
+    //reset procs back to default
+    scb_hw->scr = scb_orig;
+    clocks_hw->sleep_en0 = clock0_orig;
+    clocks_hw->sleep_en1 = clock1_orig;
+
+    //reset clocks
+    clocks_init();
+    stdio_init_all();
+
+    return;
+}
+
+void goDormant(int dpin)
+{
+    static char buffer_t[60];
+
+    time_t curtime = time(NULL);
+
+    printf("Enter dormant mode at %s", ctime_r(&curtime, buffer_t));
+    /*
+     * Some clocks at resume have losts its original values
+     * and the performce is lost to almost an useless level.
+     * Note that this function is funtionality wise untuched
+     * from the pico "extra" package example but to get the
+     * complete picture and solution, check this out:
+     * https://ghubcoder.github.io/posts/awaking-the-pico/
+     * https://github.com/ghubcoder/PicoSleepDemo
+     */
+
+    //save values for later
+    uint scb_orig = scb_hw->scr;
+    uint clock0_orig = clocks_hw->sleep_en0;
+    uint clock1_orig = clocks_hw->sleep_en1;
+
+    //measure_freqs();
+
+    // Switching to XOSC
+    uart_default_tx_wait_blocking();
+
+    // UART will be reconfigured by sleep_run_from_xosc
+    sleep_run_from_xosc();
+
+    // Running from XOSC
+    uart_default_tx_wait_blocking();
+
+    // XOSC going dormant
+    uart_default_tx_wait_blocking();
+
+    // Go to sleep until we see a high edge on GPIO dormantPin
+    sleep_goto_dormant_until_edge_high(dpin);
+
+    //reset processor and clocks back to defaults
+    recover_from_sleep(scb_orig, clock0_orig, clock1_orig);
+
+    curtime = time(NULL);
+    printf("Resuming from dormant at %s", ctime_r(&curtime, buffer_t));
+
+    //measure_freqs();
+
 }
 
 

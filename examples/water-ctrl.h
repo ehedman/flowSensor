@@ -5,7 +5,6 @@
  * For debugging
  */
 #define NETRTC      1       // 0 = Disable suport for network and RTC hat i.e, legacy pico mode.
-#define GO_DORMANT  0       // 1 = Currently woken up with reduced performance (clocks)
 #define __FILENAME__ (strrchr(__FILE__, '/') ? strrchr(__FILE__, '/') + 1 : __FILE__)
 
 /**
@@ -45,6 +44,7 @@ extern void     net_disconnect(void);
 extern bool     wifi_connect(char *ssid, char *pass, uint32_t country);
 extern void     read_flash(persistent_data *pdata);
 extern bool     write_flash(persistent_data *new_data);
+extern void     goDormant(int dpin);
 extern time_t   _time();
 
 #define PICO_CYW43_ARCH_THREADSAFE_BACKGROUND 1
@@ -90,5 +90,4 @@ extern time_t   _time();
 #define time(a)         _time(a)            // Use our time() to get current epoch from RTC
 
 #endif
-
 

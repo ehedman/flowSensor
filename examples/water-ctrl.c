@@ -33,7 +33,6 @@
 #include <time.h>
 #include <pico/stdlib.h>
 #include <pico/bootrom.h>
-#include <pico/sleep.h>
 #include <hardware/watchdog.h>
 #include "EPD_Test.h"
 #include "LCD_1in14.h"
@@ -285,11 +284,10 @@ static void gpioInit(void)
         gpio_set_dir(ResetButt, GPIO_IN);
         gpio_pull_up(ResetButt);
 
-#if GO_DORMANT
         gpio_init(dormantPin);
         gpio_set_dir(dormantPin, GPIO_IN);
         gpio_pull_down(dormantPin);
-#endif
+
 }
 
 /**
@@ -360,62 +358,6 @@ static void core1Thread(void)
     }
 
 }
-
-
-#if GO_DORMANT
-static void goDormant()
-{
-
-    time_t curtime = time();
-
-    printf("Enter dormant mode at %s\n", ctime(&curtime));
-    /*
-     * Some clocks at resume have losts its original values
-     * and the performce is lost to almost an useless level.
-     * An attempt to restore the clocks did not help either.
-     * Some more investigtion has to be made.
-     * Note that this function is funtionality wise untuched
-     * from the pico "extra" package example.
-     */
-
-    printf("sys=%lu\n", clock_get_hz(clk_sys));
-    printf("peri=%lu\n", clock_get_hz(clk_peri));
-    printf("clk_usb=%lu\n", clock_get_hz(clk_usb));
-
-    // Switching to XOSC
-    uart_default_tx_wait_blocking();
-
-    // UART will be reconfigured by sleep_run_from_xosc
-    sleep_run_from_xosc();
-
-    // Running from XOSC
-    uart_default_tx_wait_blocking();
-
-    // XOSC going dormant
-    uart_default_tx_wait_blocking();
-
-    // Go to sleep until we see a high edge on GPIO dormantPin
-    sleep_goto_dormant_until_edge_high(dormantPin);
-
-    curtime = time();
-    printf("Resuming from dormant at %s\n", ctime(&curtime)); 
-
-    printf("sys=%lu\n", clock_get_hz(clk_sys));
-    printf("peri=%lu\n", clock_get_hz(clk_peri));
-    printf("clk_usb=%lu\n", clock_get_hz(clk_usb));
-
-    clock_set_reported_hz(clk_sys, 125000000);
-    clock_set_reported_hz(clk_peri, 12000000); 
-    clock_set_reported_hz(clk_usb, 48000000);
-
-    stdio_init_all();
-
-    printf("sys=%lu\n", clock_get_hz(clk_sys));
-    printf("peri=%lu\n", clock_get_hz(clk_peri));
-    printf("clk_usb=%lu\n", clock_get_hz(clk_usb));
-
-}
-#endif
 
 /**
  * Main control loop.
@@ -505,7 +447,7 @@ void water_ctrl(void)
         printf("Using default value for FQ: %.2f\n", SENS_FQC);
     }
 
-    printf("Current persitent data:\n  ssid  = %s\n  pass = %s\n  country = %d\n  ntp server = %s\n  totVolume = %.2f\n  FQ = %.2f\n  filterAge to = %s\n",
+    printf("Current persitent data:\n  ssid  = %s\n  pass = %s\n  country = %d\n  ntp server = %s\n  totVolume = %.2f\n  FQ = %.2f\n  filterAge to = %s",
         pdata.ssid, pdata.pass, pdata.country, pdata.ntp_server, pdata.totVolume, pdata.sensFq, ctime_r(&pdata.filterAge, buffer_t));
 
     volTick = (1.0/60)/pdata.sensFq;
@@ -528,9 +470,6 @@ void water_ctrl(void)
     if (netNTP_connect(&pdata) == false) {
         printf("\nWiFi netNTP_operation failed\n");
     }
-#else
-    curtime = time(NULL);
-    printf("Current FAKE time = %s", ctime_r(&curtime, buffer_t));
 #endif
 
     net_disconnect();
@@ -589,13 +528,11 @@ void water_ctrl(void)
 
             DEV_SET_PWM(0); 
 
-#if GO_DORMANT
             if (--inactivityTimer == 0) {
-                goDormant();    // Save some more energy
+                goDormant(dormantPin);    // Save some more energy (some ticks may be lost at resume)
                 inactivityTimer = INACTIVITY_TIME;
                 break;  // We do have flow now
             }
-#endif
 
             if (doSave == true && delSave-- == 0) { // Avoid repeated saves for rapid events
                 printf("Delayed save\n");
