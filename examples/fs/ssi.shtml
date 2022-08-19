@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+<body>
+
+<h1>DigiFlow 242 @ S/Y Madonna</h1>
+
+<form action="/index.html">
+
+  <label for="ssid">SSID:</label>
+  <input type="text" id="ssid" name="ssid" value="<!--#SSID-->"><br><br>
+
+  <label for="pass">PASS:</label>
+  <input type="text" id="pass" name="pass" value="<!--#PASS-->"><br><br>
+
+  <label for="cou">Country Code:</label>
+  <input type="text" id="cou" name="cou" value="<!--#COU-->"><br><br>
+
+  <label for="ntp">NTP Server:</label>
+  <input type="text" id="ntp" name="ntp" value="<!--#NTP-->"><br><br>
+
+  <label for="totv">Total Volume:</label>
+  <input type="text" id="totv" name="totv" value="<!--#TOTV-->"><br><br>
+
+  <label for="tnkv">Tank Volume:</label>
+  <input type="text" id="tnkv" name="tnkv" value="<!--#TNKV-->"><br><br>
+
+  <label for="fqv">F/Q Value for Sensor:</label>
+  <input type="text" id="fqv" name="fqv" value="<!--#FQV-->"><br><br>
+
+  <label for="fage">Filter Replace date:</label>
+  <input type="fage" id="fage" name="fage" value="<!--#FAGE-->"><br><br>
+
+  <label for="fvol">Filter Volume:</label>
+  <input type="fvol" id="fvol" name="fvol" value="<!--#FVOL-->"><br><br>
+
+  <label for="vers">Firmware Version:</label>
+  <input type="vers" id="vers" name="vers" value="<!--#VERS-->"><br><br>
+
+  <input type="submit" value="Submit">
+</form>
+
+<p>Click the "Submit" button and the form-data will be sent to a page on the 
+server called "index.html".</p>
+
+</body>
+</html>
+

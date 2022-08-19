@@ -44,7 +44,7 @@ pico_enable_stdio_uart(main 1)
 # create map/bin/hex/uf2 file etc.
 pico_add_extra_outputs(main)
 
-target_link_libraries(main pico_cyw43_arch_lwip_threadsafe_background examples LCD Infrared Icm20948 GUI Fonts Config pico_stdlib hardware_spi pico_multicore hardware_flash hardware_sleep hardware_rtc pico_runtime)
+target_link_libraries(main pico_cyw43_arch_lwip_threadsafe_background examples LCD Infrared Icm20948 GUI Fonts Config pico_stdlib hardware_spi pico_multicore hardware_flash hardware_sleep hardware_rtc cyw43_driver_base pico_lwip_http hardware_adc)
 
 target_include_directories(examples 
 PRIVATE ${PICO_SDK_PATH}/src/host/pico_multicore/include

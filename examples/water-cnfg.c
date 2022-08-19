@@ -66,7 +66,7 @@ typedef struct NTP_T_ {
     alarm_id_t ntp_resend_alarm;
 } NTP_T;
 
-static bool rtcIsSet = false;
+static bool rtcIsSetDone = false;
 static bool netIsConnected = false;
 
 /**
@@ -184,6 +184,11 @@ bool wifi_connect(char *ssid, char *pass, uint32_t country)
     }
 
     cyw43_arch_enable_sta_mode();
+
+    // this seems to be the best be can do using the predefined `cyw43_pm_value` macro:
+    // cyw43_wifi_pm(&cyw43_state, CYW43_PERFORMANCE_PM);
+    // however it doesn't use the `CYW43_NO_POWERSAVE_MODE` value, so we do this instead:
+    cyw43_wifi_pm(&cyw43_state, cyw43_pm_value(CYW43_NO_POWERSAVE_MODE, 20, 1, 1, 1));
 
     if ((rval = cyw43_arch_wifi_connect_timeout_ms(ssid, pass, CYW43_AUTH_WPA2_AES_PSK, 10000))) {
         printf("\ncyw43_arch_wifi_connect_timeout_ms failed: %s/%d/%s/%d\n", __FILENAME__, __LINE__, ssid, rval);
@@ -329,7 +334,7 @@ static void ntp_result(NTP_T* state, int status, time_t *result) {
                utc->tm_hour, utc->tm_min, utc->tm_sec);
         printf("set RTC accordingly\n");
         set_rtc(utc);
-        rtcIsSet = true;
+        rtcIsSetDone = true;
     }
 
     if (state->ntp_resend_alarm > 0) {
@@ -368,6 +373,7 @@ static int64_t ntp_failed_handler(alarm_id_t id, void *user_data)
     NTP_T* state = (NTP_T*)user_data;
     printf("ntp request failed\n");
     ntp_result(state, -1, NULL);
+    rtcIsSetDone = true;
     return 0;
 }
 
@@ -476,28 +482,43 @@ static bool net_ntp(char *ntp_server)
 
 bool netNTP_connect(persistent_data *pdata)
 {
+    bool rval = false;
+    static char buf_ntp[20];
 
-     if (netIsConnected == false) {
+    if (netIsConnected == false) {
 
         if (wifi_connect(pdata->ssid, pdata->pass, pdata->country) == false) {
-            return false;
+            return rval;
         } else {
-            if (net_ntp(pdata->ntp_server) == false) {
-                return false;
+            if (!strncmp(pdata->ntp_server, "0.0.0.0", 7)) {
+                // Default gw host assumed to hold NTP services
+                strncpy(buf_ntp, ip4addr_ntoa(netif_ip4_gw(netif_list)), sizeof(buf_ntp));
+            } else {
+                strncpy(buf_ntp, pdata->ntp_server, sizeof(buf_ntp));
             }
-            for (int i = 0; i < 20; i++) {
+            if (net_ntp(buf_ntp) == false) {
+                return rval;
+            }
+            for (int i = 0; i < NTP_TEST_TIME/1000; i++) {
                 sleep_ms(1000);
-                if (rtcIsSet == true) {
-                    rtcIsSet = false;
+                if (rtcIsSetDone == true ) { // Set in the ntp_result() or ntp_failed_handler() callbacks
+                    rtcIsSetDone = false;
+                    rval =  true;
                     break;
-                } else if (i >= 18) {
-                    return false;
                 }
             }
         }
     }
 
-    return true;
+    return rval;
+}
+
+/**
+ * Return logical connection status
+ */
+bool net_checkconnection(void)
+{
+    return netIsConnected;
 }
 
 /**
@@ -511,6 +532,7 @@ void net_disconnect(void)
     }
 }
 
+#if 0
 static void measure_freqs(void)
 {
 
@@ -522,23 +544,22 @@ static void measure_freqs(void)
     printf("rtc=%lu\n", clock_get_hz(clk_rtc));
 
 }
+#endif
 
 static void recover_from_sleep(uint scb_orig, uint clock0_orig, uint clock1_orig)
 {
 
-    //Re-enable ring Oscillator control
+    // Re-enable ring Oscillator control
     rosc_write(&rosc_hw->ctrl, ROSC_CTRL_ENABLE_BITS);
 
-    //reset procs back to default
+    // Reset procs back to default
     scb_hw->scr = scb_orig;
     clocks_hw->sleep_en0 = clock0_orig;
     clocks_hw->sleep_en1 = clock1_orig;
 
-    //reset clocks
+    // Reset clocks
     clocks_init();
     stdio_init_all();
-
-    return;
 }
 
 void goDormant(int dpin)
@@ -553,12 +574,12 @@ void goDormant(int dpin)
      * and the performce is lost to almost an useless level.
      * Note that this function is funtionality wise untuched
      * from the pico "extra" package example but to get the
-     * complete picture and solution, check this out:
+     * complete picture and a solution, check this out:
      * https://ghubcoder.github.io/posts/awaking-the-pico/
      * https://github.com/ghubcoder/PicoSleepDemo
      */
 
-    //save values for later
+    // Save values for later
     uint scb_orig = scb_hw->scr;
     uint clock0_orig = clocks_hw->sleep_en0;
     uint clock1_orig = clocks_hw->sleep_en1;
@@ -580,7 +601,7 @@ void goDormant(int dpin)
     // Go to sleep until we see a high edge on GPIO dormantPin
     sleep_goto_dormant_until_edge_high(dpin);
 
-    //reset processor and clocks back to defaults
+    // Reset processor and clocks back to defaults
     recover_from_sleep(scb_orig, clock0_orig, clock1_orig);
 
     curtime = time(NULL);

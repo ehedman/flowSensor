@@ -129,7 +129,7 @@ static int sessTick;
 /**
  * Persistent data in flash
  */
-static persistent_data pdata;
+persistent_data pdata;
 
 /**
  * Format the text header.
@@ -420,6 +420,11 @@ static bool waterCtrlInit(void)
 
 }
 
+//#include "hardware/adc.h"
+#include "lwip/apps/httpd.h"
+#include "ssi.h"
+
+
 /**
  * This is the "main" entry
  */
@@ -465,18 +470,30 @@ void water_ctrl(void)
     pdata.tankVolume = TANK_VOLUME;
     write_flash(&pdata);
 
-
 #if NETRTC
     if (netNTP_connect(&pdata) == false) {
         printf("\nWiFi netNTP_operation failed\n");
     }
 #endif
 
-    net_disconnect();
-
     if (waterCtrlInit() == false) {
+        net_disconnect();
         while(1) sleep_ms(10000);
     }
+
+    if (net_checkconnection() == true) {
+        printf("got I.P adress %s\n", ip4addr_ntoa(netif_ip4_addr(netif_list)));
+        printf("gateway adress %s\n", ip4addr_ntoa(netif_ip4_gw(netif_list)));
+
+    httpd_init();
+    ssi_init();
+    printf("Http server initialized.\n");
+    // infinite loop for now
+    //for (;;) {sleep_ms(100);}
+    }
+
+
+    //net_disconnect();
 
     curtime = time(NULL);
     printf("Current RTC time is %s", ctime_r(&curtime, buffer_t));

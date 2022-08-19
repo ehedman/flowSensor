@@ -15,7 +15,7 @@ Marine water flow sensor and meter
 - Near end of filter life alert
 - End of filter life alert
 - Automatic data memorised in flash.
-- WiFi connectivity, NTP functions etc.
+- WiFi connectivity, NTP, HTTPD functions etc.
     
 ### Environment
 - Linux Mint (Debian) platform for development

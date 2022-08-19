@@ -42,6 +42,7 @@ typedef struct p_data {
 extern bool     netNTP_connect(persistent_data *pdata);
 extern void     net_disconnect(void);
 extern bool     wifi_connect(char *ssid, char *pass, uint32_t country);
+extern bool     net_checkconnection(void);
 extern void     read_flash(persistent_data *pdata);
 extern bool     write_flash(persistent_data *new_data);
 extern void     goDormant(int dpin);
@@ -51,8 +52,8 @@ extern time_t   _time();
 
 #define WIFI_COUNTRY    CYW43_COUNTRY_SWEDEN
 #define WIFI_SSID       "sy-madonna-24"
-#define WIFI_PASS       "XXXX"
-#define NTP_SERVER      "192.168.4.3"
+#define WIFI_PASS       "090a0b0c0d"
+#define NTP_SERVER      "0.0.0.0"                   // 0.0.0.0 = auto i.e assume DHCP host also is NTP server
 
 #define TANK_VOLUME     725.00                      // Water tank volume
 
@@ -90,4 +91,5 @@ extern time_t   _time();
 #define time(a)         _time(a)            // Use our time() to get current epoch from RTC
 
 #endif
+
 

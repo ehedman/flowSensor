@@ -87,4 +87,11 @@
 #define SLIP_DEBUG                  LWIP_DBG_OFF
 #define DHCP_DEBUG                  LWIP_DBG_OFF
 
+#define LWIP_HTTPD 1
+#define LWIP_HTTPD_SSI 1
+// don't include the tag comment - less work for the CPU, but may be harder to debug
+#define LWIP_HTTPD_SSI_INCLUDE_TAG 0
+// use generated fsdata
+#define HTTPD_FSDATA_FILE "my_fsdata.c"
+
 #endif /* __LWIPOPTS_H__ */
