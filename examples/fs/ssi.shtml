@@ -1,46 +1,202 @@
 <!DOCTYPE html>
-<html>
-<body>
+<html lang="en">
+<head>
+    <title>DigiFLow 242</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">     
+    <meta name="description" content="hedmanshome.se Marine Water FlowMeter">
+    <meta name="author" content="Erland Hedman">
+    <meta name="license" content="Free">
+</head>
 
-<h1>DigiFlow 242 @ S/Y Madonna</h1>
+<style>
 
-<form action="/index.html">
+table {
+  font-family: arial, sans-serif;
+  border-collapse: collapse;
+  width: 100%;
+}
 
-  <label for="ssid">SSID:</label>
-  <input type="text" id="ssid" name="ssid" value="<!--#SSID-->"><br><br>
+td, th {
+  border: 1px solid #dddddd;
+  text-align: left;
+  padding: 8px;
+  width: 30%;
+}
 
-  <label for="pass">PASS:</label>
-  <input type="text" id="pass" name="pass" value="<!--#PASS-->"><br><br>
+tr:nth-child(even) {
+  background-color: #dddddd;
+}
 
-  <label for="cou">Country Code:</label>
-  <input type="text" id="cou" name="cou" value="<!--#COU-->"><br><br>
+</style>
 
-  <label for="ntp">NTP Server:</label>
-  <input type="text" id="ntp" name="ntp" value="<!--#NTP-->"><br><br>
+<script>
 
-  <label for="totv">Total Volume:</label>
-  <input type="text" id="totv" name="totv" value="<!--#TOTV-->"><br><br>
+function upd_country(obj)
+{
+    var nval;
+    if (obj.options[obj.selectedIndex].text == "Select new")
+        return;
+        
+    if (obj.options[obj.selectedIndex].text == "Sweden") {
+        nval = obj.options[obj.selectedIndex].value;
+    } else if (obj.options[obj.selectedIndex].text == "USA") {
+        nval = obj.options[obj.selectedIndex].value;
+    } else if (obj.options[obj.selectedIndex].text == "UK") {
+        nval = obj.options[obj.selectedIndex].value;
+    }
 
-  <label for="tnkv">Tank Volume:</label>
-  <input type="text" id="tnkv" name="tnkv" value="<!--#TNKV-->"><br><br>
+    document.getElementById("cou").value = nval;
+}
 
-  <label for="fqv">F/Q Value for Sensor:</label>
-  <input type="text" id="fqv" name="fqv" value="<!--#FQV-->"><br><br>
+function formatDate(date) {
+    var d = new Date(date),
+        month = '' + (d.getMonth() + 1),
+        day = '' + d.getDate(),
+        year = d.getFullYear();
 
-  <label for="fage">Filter Replace date:</label>
-  <input type="fage" id="fage" name="fage" value="<!--#FAGE-->"><br><br>
+    if (month.length < 2) 
+        month = '0' + month;
+    if (day.length < 2) 
+        day = '0' + day;
 
-  <label for="fvol">Filter Volume:</label>
-  <input type="fvol" id="fvol" name="fvol" value="<!--#FVOL-->"><br><br>
+    return [year, month, day].join('-');
+}
 
-  <label for="vers">Firmware Version:</label>
-  <input type="vers" id="vers" name="vers" value="<!--#VERS-->"><br><br>
+function ToLocalDate (inDate) {
 
-  <input type="submit" value="Submit">
+    var date = new Date(0);
+    return formatDate(date.setUTCSeconds(inDate));;
+}
+
+function setFdate(how)
+{
+    var obje = document.getElementById("fage");
+    var objd = document.getElementById("fdate");
+    var epoch;
+
+    if (how == "plus")
+        epoch = parseInt(obje.value, 10) + 2628288;
+    else if (how == 'minus')
+        epoch = parseInt(obje.value, 10) - 2628288;
+    else
+        return;
+          
+    obje.value =  epoch;                
+    objd.value = ToLocalDate(epoch);
+}
+
+function init()
+{
+    var obje = document.getElementById("fage");
+    var objd = document.getElementById("fdate");
+
+    objd.value = ToLocalDate(obje.value);
+}
+
+</script>
+
+<body onload="init()">
+
+<h1>DigiFlow 242 @ <!--#IPAD-->  <!--#CURTM--></h1>
+
+<form name="form" id="form" method="post" action="http://192.168.4.49/index.html">
+<input type="hidden" name="fage" id="fage" value="<!--#FAGE-->">
+<table>
+    <tr>
+    <th>Property</th>
+    <th>Value</th>
+    <th>Description></th>
+    </tr>
+
+    <tr>  
+        <td><label width="100px" for="ssid">SSID</label></td>
+        <td><input type="text" id="ssid" name="ssid" width="400px" value="<!--#SSID-->"></td>
+        <td>Network Name (SSID)</td>
+    </tr>
+
+    <tr>
+        <td><label for="pass">PASS</label></td>
+        <td><input type="text" id="pass" name="pass" value="<!--#PASS-->"</td>
+        <td>WiFi Password</td>
+    </tr>
+
+    <tr>
+        <td><label for="cou">Country Code</label></td>
+        <td>
+            <input type="text" readonly id="cou" name="cou" value="<!--#COU-->">
+            <select name="couopt" id="couopt" title="CountryCode" onchange="upd_country(this)">
+                <option selected value="0">Select new</option>
+                <option value="21333">USA</option>
+                <option value="16967">UK</option>
+                <option value="17747">Sweden</option>
+                <!--Add? See Pico SDK lib/cyw43-driver/src/cyw43_country.h -->
+            </select> 
+        </td>
+        <td>WiFi Country code</td>
+    </tr>
+
+    <tr>
+        <td><label for="ntp">NTP Server</label></td>
+        <td><input type="text" id="ntp" name="ntp" value="<!--#NTP-->"></td>
+        <td>0.0.0.0 = Auto (Use the DHCP servers' NTP service)</td>
+    </tr>
+
+    <tr>
+        <td><label for="totv">Total Volume</label></td>
+        <td><input type="text" title="In Litres" id="totv" name="totv" value="<!--#TOTV-->"></td>
+        <td>Volume currently used (Adjust)</td>
+    </tr>
+
+    <tr>
+        <td><label for="tnkv">Tank Volume</label></td>
+        <td><input type="text" title="In Litres" id="tnkv" name="tnkv" value="<!--#TNKV-->"></td>
+        <td>Water Tank volume</td>
+    </tr>
+
+    <tr>
+      <td><label for="fqv">F/Q Value for Sensor</label></td>
+      <td><input type="text" title="Integer" id="fqv" name="fqv" value="<!--#FQV-->"></td>
+    <td>Frequency F=(<!--#FQV-->*Q)Q=L/MIN</td>
+    </tr>
+
+    <tr>
+        <td><label for="fdate">Filter Replace date</label></td>
+        <td>
+            <input type="text" readonly id="fdate" name="fdate" value="">
+            <button type="button" onclick="setFdate('plus')">+4W</button> 
+            <button type="button" onclick="setFdate('minus')">-4W</button> 
+        </td>
+        <td>Expiration date for filter by Date</td>
+    </tr>
+
+    <tr>
+        <td><label for="fvol">Filter Volume</label></td>
+        <td><input type="text" title="In Litres" readonly id="fvol" name="fvol" value="<!--#FVOL-->"></td>
+        <td>Filter Volume since last replacement</td>
+    </tr>
+
+    <tr>
+        <td><label for="vers">Firmware Version</label></td>
+        <td><input type="text" style="background: lightgray" readonly id="vers" name="vers" value="<!--#VERS-->"></td>
+        <td>Version of this application</td>
+    </tr>
+    <tr>
+        <td><label for="ipad">I.P address</label></td>
+        <td><input type="text" style="background: lightgray" readonly id="ipad" value="<!--#IPAD-->"></td>
+        <td>DHCP I.P address assigned for this device</td>
+    </tr>
+    <tr>
+        <td><label for="ipagw">GW I.P address</label></td>
+        <td><input type="text" style="background: lightgray" readonly id="ipagw" value="<!--#IPAGW-->"></td>
+        <td>DHCP Default gateway I.P assigned for this device</td>
+    </tr>
+ 
+</table>
+     <input type="submit" value="Submit">
 </form>
 
-<p>Click the "Submit" button and the form-data will be sent to a page on the 
-server called "index.html".</p>
+<p>NOTE: Changing any of the SSID, PASS and Country Code parameters will result a lost connection the next time this device is
+restarted. You then have to regain the connection by joining that new WiFi network.</p>
 
 </body>
 </html>

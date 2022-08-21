@@ -58,6 +58,13 @@ extern time_t   _time();
 #define TANK_VOLUME     725.00                      // Water tank volume
 
 /**
+ * Sensor characteristics:
+ * SENS_FQC from sensors datasheet (F) or better
+ * messured in actual installation environment.
+ */
+#define SENS_FQC    11.00           // Pulse Characteristics: F=11.00 x Q (Rate of flow (Q) in litres/min)
+
+/**
  * OK chars for URLs and WiFi text properties
  */
 #define OKCHAR   "abcdefghijklmnopqrstvwxzyABCDEFGHIJKLMNOPQRTSVWXZY0123456789-"

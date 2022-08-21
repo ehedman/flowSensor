@@ -24,6 +24,7 @@ include_directories(./lib/Icm20948)
 include_directories(./lib/LCD)
 include_directories(./lib/Infrared)
 
+
 if (PICO_CYW43_SUPPORTED) # set by BOARD=pico-w
     if (NOT TARGET pico_cyw43_arch)
         message("Skipping Pico W support is not available")
@@ -31,6 +32,18 @@ if (PICO_CYW43_SUPPORTED) # set by BOARD=pico-w
         message("including Pico W support")
     endif()
 endif()
+
+set(MAKE_FS_DATA_SCRIPT ${CMAKE_CURRENT_LIST_DIR}/external/makefsdata)
+
+add_custom_command(OUTPUT fsdata.c
+  COMMAND ${MAKE_FS_DATA_SCRIPT} fs
+  COMMAND mv fsdata.c ../fs
+  COMMAND touch lwipopts.h
+  WORKING_DIRECTORY ${CMAKE_CURRENT_LIST_DIR}/examples 
+  DEPENDS ${CMAKE_CURRENT_LIST_DIR}/examples/fs/ssi.shtml
+  VERBATIM)
+add_custom_target(fsdata
+              DEPENDS fsdata.c)
 
 # create an executable file
 add_executable(main
@@ -57,6 +70,8 @@ PRIVATE ${PICO_SDK_PATH}/src/rp2_common/hardware_flash/include
 PRIVATE ${PICO_SDK_PATH}/src/rp2_common/hardware_sync/include
 PRIVATE ${PICO_EXTRAS_PATH}/src/rp2_common/pico_sleep/include
 PRIVATE ${PICO_EXTRAS_PATH}/src/rp2_common/hardware_rosc/include
+PRIVATE ${PICO_SDK_PATH}/lib/lwip/src/apps
 PRIVATE ${CMAKE_CURRENT_LIST_DIR}
 )
+
 

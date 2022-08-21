@@ -156,6 +156,7 @@ bool write_flash(persistent_data *new_data)
 bool wifi_connect(char *ssid, char *pass, uint32_t country)
 {
     int rval = 0;
+    time_t retry;
 
     if (netIsConnected == true) {
         printf("Repeated connection request ignored\n");
@@ -190,12 +191,22 @@ bool wifi_connect(char *ssid, char *pass, uint32_t country)
     // however it doesn't use the `CYW43_NO_POWERSAVE_MODE` value, so we do this instead:
     cyw43_wifi_pm(&cyw43_state, cyw43_pm_value(CYW43_NO_POWERSAVE_MODE, 20, 1, 1, 1));
 
-    if ((rval = cyw43_arch_wifi_connect_timeout_ms(ssid, pass, CYW43_AUTH_WPA2_AES_PSK, 10000))) {
-        printf("\ncyw43_arch_wifi_connect_timeout_ms failed: %s/%d/%s/%d\n", __FILENAME__, __LINE__, ssid, rval);
-        return netIsConnected;
+    for (int i = 0; i < 3; i++) {
+        retry = time(NULL);
+        if ((rval = cyw43_arch_wifi_connect_timeout_ms(ssid, pass, CYW43_AUTH_WPA2_AES_PSK, 10000))) {
+            printf("\ncyw43_arch_wifi_connect_timeout_ms failed: %s/%d/%s/%d\n", __FILENAME__, __LINE__, ssid, rval);
+            if (rval < 0 && time(NULL) - retry < 4) {
+                printf("Retry %d/3\n", i+1);
+                sleep_ms(2000);
+            } else {
+                return netIsConnected;
+            }
+        }
+        if (rval == 0) {
+            netIsConnected = true;
+            break;
+        }
     }
-
-    netIsConnected = true;
 
     return netIsConnected;
 }

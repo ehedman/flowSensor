@@ -38,7 +38,11 @@
 #include "LCD_1in14.h"
 #include "waterbcd.h"
 #include "water-ctrl.h"
+#include "ssi.h"
 #include <pico/cyw43_arch.h>
+#include <lwip/apps/httpd.h>
+
+
 
 /**
  * For debug purposes this app enters flash
@@ -80,13 +84,6 @@
 #define LCD_WIDTH           LCD_1IN14_WIDTH
 
 #define POLLRATE            250     // Main loop interval in ms
-
-/**
- * Sensor characteristics:
- * SENS_FQC from sensors datasheet (F) or better
- * messured in actual installation environment.
- */
-#define SENS_FQC    11.00           // Pulse Characteristics: F=11.00 x Q (Rate of flow (Q) in litres/min)
 
 static UWORD *BlackImage;
 static char HdrStr[100]     = { "Header" };
@@ -420,11 +417,6 @@ static bool waterCtrlInit(void)
 
 }
 
-//#include "hardware/adc.h"
-#include "lwip/apps/httpd.h"
-#include "ssi.h"
-
-
 /**
  * This is the "main" entry
  */
@@ -447,13 +439,28 @@ void water_ctrl(void)
 
     read_flash(&pdata);
 
-    if (pdata.sensFq <= 0.0 || pdata.sensFq > 14.00 ) {
+    if (!pdata.checksum) {  // Set up defaults
+        printf("Update flash data\n");
+        strcpy(pdata.ssid, WIFI_SSID);
+        strcpy(pdata.pass,WIFI_PASS);
+        strcpy(pdata.ntp_server, NTP_SERVER);
+        pdata.country = WIFI_COUNTRY;
+        pdata.tankVolume = TANK_VOLUME;
+        pdata.totVolume = 0;
+        pdata.filterVolume = 0;
+        pdata.filterAge = time(NULL) + SDAY;
         pdata.sensFq = SENS_FQC;
-        printf("Using default value for FQ: %.2f\n", SENS_FQC);
+        pdata.version = atof(VERSION);
+        write_flash(&pdata);
     }
 
-    printf("Current persitent data:\n  ssid  = %s\n  pass = %s\n  country = %d\n  ntp server = %s\n  totVolume = %.2f\n  FQ = %.2f\n  filterAge to = %s",
-        pdata.ssid, pdata.pass, pdata.country, pdata.ntp_server, pdata.totVolume, pdata.sensFq, ctime_r(&pdata.filterAge, buffer_t));
+#if 0
+char buffer_t[60];
+printf("\n\n  ssid  = %s\n  pass = %s\n  country = %d\n  ntp server = %s\n  \
+totVolume = %.2f\n  tankVolume = %.2f\n  FQ = %.2f\n  filterAge to = %s  filterVolume = %.0f\n\n",
+pdata.ssid, pdata.pass, pdata.country, pdata.ntp_server, pdata.totVolume, pdata.tankVolume,
+pdata.sensFq, ctime_r(&pdata.filterAge, buffer_t)), pdata.filterVolume ;
+#endif
 
     volTick = (1.0/60)/pdata.sensFq;
 
@@ -461,14 +468,10 @@ void water_ctrl(void)
         pdata.filterAge = time(NULL) + SDAY; // Add a day to start with
     }
 
-    printf("Update flash data\n");
-    strcpy(pdata.ssid, WIFI_SSID);
-    strcpy(pdata.pass,WIFI_PASS);
-    strcpy(pdata.ntp_server, NTP_SERVER);
-    pdata.country = WIFI_COUNTRY;
-    pdata.version = atof(VERSION);
-    pdata.tankVolume = TANK_VOLUME;
-    write_flash(&pdata);
+    if (pdata.sensFq <= 0.0 || pdata.sensFq > 14.00 ) {
+        pdata.sensFq = SENS_FQC;
+        printf("Using default value for FQ: %.2f\n", SENS_FQC);
+    }
 
 #if NETRTC
     if (netNTP_connect(&pdata) == false) {
@@ -485,13 +488,12 @@ void water_ctrl(void)
         printf("got I.P adress %s\n", ip4addr_ntoa(netif_ip4_addr(netif_list)));
         printf("gateway adress %s\n", ip4addr_ntoa(netif_ip4_gw(netif_list)));
 
-    httpd_init();
-    ssi_init();
-    printf("Http server initialized.\n");
-    // infinite loop for now
-    //for (;;) {sleep_ms(100);}
+        httpd_init();
+        ssi_init();
+        printf("Http server initialized.\n");
+        // infinite loop for now
+        //for (;;) {sleep_ms(100);}
     }
-
 
     //net_disconnect();
 
