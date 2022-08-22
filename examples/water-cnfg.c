@@ -48,8 +48,6 @@
 #include <lwip/dns.h>
 #include <lwip/pbuf.h>
 #include <lwip/udp.h>
-
-
 #include "lwip/tcp.h"
 
 #define NTP_MSG_LEN 48

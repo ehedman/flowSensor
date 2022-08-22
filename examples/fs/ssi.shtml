@@ -6,100 +6,157 @@
     <meta name="description" content="hedmanshome.se Marine Water FlowMeter">
     <meta name="author" content="Erland Hedman">
     <meta name="license" content="Free">
-</head>
+    <link rel="icon" href="drop.ico">
 
-<style>
+    <style>
 
-table {
-  font-family: arial, sans-serif;
-  border-collapse: collapse;
-  width: 100%;
-}
-
-td, th {
-  border: 1px solid #dddddd;
-  text-align: left;
-  padding: 8px;
-  width: 30%;
-}
-
-tr:nth-child(even) {
-  background-color: #dddddd;
-}
-
-</style>
-
-<script>
-
-function upd_country(obj)
-{
-    var nval;
-    if (obj.options[obj.selectedIndex].text == "Select new")
-        return;
-        
-    if (obj.options[obj.selectedIndex].text == "Sweden") {
-        nval = obj.options[obj.selectedIndex].value;
-    } else if (obj.options[obj.selectedIndex].text == "USA") {
-        nval = obj.options[obj.selectedIndex].value;
-    } else if (obj.options[obj.selectedIndex].text == "UK") {
-        nval = obj.options[obj.selectedIndex].value;
+    table {
+        font-family: arial, sans-serif;
+        border-collapse: collapse;
+        width: 100%;
     }
 
-    document.getElementById("cou").value = nval;
-}
+    td, th {
+        border: 1px solid #dddddd;
+        text-align: left;
+        padding: 8px;
+        width: 30%;
+    }
 
-function formatDate(date) {
-    var d = new Date(date),
-        month = '' + (d.getMonth() + 1),
-        day = '' + d.getDate(),
-        year = d.getFullYear();
+    tr:nth-child(even) {
+        background-color: #dddddd;
+    }
 
-    if (month.length < 2) 
-        month = '0' + month;
-    if (day.length < 2) 
-        day = '0' + day;
+    body {
+        padding: 20px;
+    }
 
-    return [year, month, day].join('-');
-}
+    </style>
 
-function ToLocalDate (inDate) {
+    <script>
 
-    var date = new Date(0);
-    return formatDate(date.setUTCSeconds(inDate));;
-}
+    function upd_country(obj)
+    {
+        if (obj.options[obj.selectedIndex].text == "Select new")
+            return;
 
-function setFdate(how)
-{
-    var obje = document.getElementById("fage");
-    var objd = document.getElementById("fdate");
-    var epoch;
+        document.getElementById("cou").value = obj.options[obj.selectedIndex].value;
+    }
 
-    if (how == "plus")
-        epoch = parseInt(obje.value, 10) + 2628288;
-    else if (how == 'minus')
-        epoch = parseInt(obje.value, 10) - 2628288;
-    else
-        return;
-          
-    obje.value =  epoch;                
-    objd.value = ToLocalDate(epoch);
-}
+    function upd_ntp(obj)
+    {
+        if (obj.options[obj.selectedIndex].text == "Select new")
+            return;
 
-function init()
-{
-    var obje = document.getElementById("fage");
-    var objd = document.getElementById("fdate");
+        document.getElementById("ntp").value = obj.options[obj.selectedIndex].value;
 
-    objd.value = ToLocalDate(obje.value);
-}
+    }
 
-</script>
+    function formatDate(date) {
+        var d = new Date(date),
+            month = '' + (d.getMonth() + 1),
+            day = '' + d.getDate(),
+            year = d.getFullYear();
+
+        if (month.length < 2) 
+            month = '0' + month;
+        if (day.length < 2) 
+            day = '0' + day;
+
+        return [year, month, day].join('-');
+    }
+
+    function ToLocalDate (inDate) {
+
+        var date = new Date(0);
+        return formatDate(date.setUTCSeconds(inDate));;
+    }
+
+    function setFdate(how)
+    {
+        var obje = document.getElementById("fage");
+        var objd = document.getElementById("fdate");
+        var epoch;
+
+        if (how == "plus")
+            epoch = parseInt(obje.value, 10) + 2628288;
+        else if (how == 'minus')
+            epoch = parseInt(obje.value, 10) - 2628288;
+        else
+            return;
+              
+        obje.value =  epoch;                
+        objd.value = ToLocalDate(epoch);
+    }
+
+    function showPass()
+    {
+        var obj = document.getElementById("pass");
+        if (obj.type === "password") {
+            obj.type = "text";
+        } else {
+            obj.type = "password";
+        }
+    }
+
+    function isValidIP(ip)
+    {
+        var ipaddress = ip.value;
+        var patt = /^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/;
+        var match = ipaddress.match(patt);
+
+        if (ipaddress == "255.255.255.255") {
+            return false;
+        }
+
+        if (match == null) {
+            return false;
+        }
+           
+        return true;
+    }
+
+    function isValidSSID(ssid) { 
+        var str = ssid.value;
+
+        return /^[!#;].|[+\[\]/"\t\s].*$/.test(str);
+    }
+
+    function init()
+    {
+        var obje = document.getElementById("fage");
+        var objd = document.getElementById("fdate");
+
+        objd.value = ToLocalDate(obje.value);
+    }
+
+    function finish()
+    {
+        var ntpObj = document.getElementById("ntp");
+        var ssidObj = document.getElementById("ssid");
+
+        if (isValidIP(ntpObj) == false) {
+            alert("Error: Garbled NTP Server I.P Adress");
+            return false;
+        }
+
+        if (isValidSSID(ssidObj) == true) {
+            alert("Error: Garbled SSID string");
+            return false;
+        }
+
+        return true;
+    }
+
+    </script>
+
+</head>
 
 <body onload="init()">
 
 <h1>DigiFlow 242 @ <!--#IPAD-->  <!--#CURTM--></h1>
 
-<form name="form" id="form" method="post" action="http://192.168.4.49/index.html">
+<form name="form" id="form" method="post" onsubmit="return finish()" action="/index.html">
 <input type="hidden" name="fage" id="fage" value="<!--#FAGE-->">
 <table>
     <tr>
@@ -109,14 +166,17 @@ function init()
     </tr>
 
     <tr>  
-        <td><label width="100px" for="ssid">SSID</label></td>
-        <td><input type="text" id="ssid" name="ssid" width="400px" value="<!--#SSID-->"></td>
+        <td><label for="ssid">SSID</label></td>
+        <td><input type="text" id="ssid" name="ssid" value="<!--#SSID-->"></td>
         <td>Network Name (SSID)</td>
     </tr>
 
     <tr>
         <td><label for="pass">PASS</label></td>
-        <td><input type="text" id="pass" name="pass" value="<!--#PASS-->"</td>
+        <td>
+            <input type="password" id="pass" name="pass" value="<!--#PASS-->">
+            <input type="checkbox" onclick="showPass()">Show Password
+        </td>
         <td>WiFi Password</td>
     </tr>
 
@@ -129,7 +189,10 @@ function init()
                 <option value="21333">USA</option>
                 <option value="16967">UK</option>
                 <option value="17747">Sweden</option>
-                <!--Add? See Pico SDK lib/cyw43-driver/src/cyw43_country.h -->
+                <option value="20302">Norway</otion>
+                <option value="19268">Denmark</otion>
+                <option value="18758">Finland</otion>
+                <!--More? See Pico SDK lib/cyw43-driver/src/cyw43_country.h -->
             </select> 
         </td>
         <td>WiFi Country code</td>
@@ -137,25 +200,34 @@ function init()
 
     <tr>
         <td><label for="ntp">NTP Server</label></td>
-        <td><input type="text" id="ntp" name="ntp" value="<!--#NTP-->"></td>
+        <td>
+            <input type="text" id="ntp" name="ntp" value="<!--#NTP-->">
+            <select name="ntpopt" id="ntpopt" title="ntpopt" onchange="upd_ntp(this)">
+                <option selected value="0">Select new</option>
+                <option value="0.0.0.0">Auto</option>
+                <option value="time.google.com">time.google.com</option>
+                <option value="time.windows.com">time.windows.com</option>
+                <option value="time.apple.com">time.apple.com</option>
+            </select> 
+        </td>
         <td>0.0.0.0 = Auto (Use the DHCP servers' NTP service)</td>
     </tr>
 
     <tr>
         <td><label for="totv">Total Volume</label></td>
-        <td><input type="text" title="In Litres" id="totv" name="totv" value="<!--#TOTV-->"></td>
-        <td>Volume currently used (Adjust)</td>
+        <td><input type="number"  min="4" title="In Litres" id="totv" name="totv" value="<!--#TOTV-->"></td>
+        <td>Volume currently used</td>
     </tr>
 
     <tr>
         <td><label for="tnkv">Tank Volume</label></td>
-        <td><input type="text" title="In Litres" id="tnkv" name="tnkv" value="<!--#TNKV-->"></td>
+        <td><input type="number" min="4" title="In Litres" id="tnkv" name="tnkv" value="<!--#TNKV-->"></td>
         <td>Water Tank volume</td>
     </tr>
 
     <tr>
       <td><label for="fqv">F/Q Value for Sensor</label></td>
-      <td><input type="text" title="Integer" id="fqv" name="fqv" value="<!--#FQV-->"></td>
+      <td><input type="number" min="4" max="14" title="Integer" id="fqv" name="fqv" value="<!--#FQV-->"></td>
     <td>Frequency F=(<!--#FQV-->*Q)Q=L/MIN</td>
     </tr>
 
@@ -166,12 +238,12 @@ function init()
             <button type="button" onclick="setFdate('plus')">+4W</button> 
             <button type="button" onclick="setFdate('minus')">-4W</button> 
         </td>
-        <td>Expiration date for filter by Date</td>
+        <td>Expiration date for filter</td>
     </tr>
 
     <tr>
         <td><label for="fvol">Filter Volume</label></td>
-        <td><input type="text" title="In Litres" readonly id="fvol" name="fvol" value="<!--#FVOL-->"></td>
+        <td><input type="number" title="In Litres" id="fvol" name="fvol" value="<!--#FVOL-->"></td>
         <td>Filter Volume since last replacement</td>
     </tr>
 
@@ -192,8 +264,10 @@ function init()
     </tr>
  
 </table>
-     <input type="submit" value="Submit">
+<br>
+<input type="submit" value="Submit" title="Save changes" style="float: right;">
 </form>
+<button type="button" title="Refresh Page" onclick="location.reload()">Refresh</button>
 
 <p>NOTE: Changing any of the SSID, PASS and Country Code parameters will result a lost connection the next time this device is
 restarted. You then have to regain the connection by joining that new WiFi network.</p>

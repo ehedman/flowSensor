@@ -27,6 +27,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 ******************************************************************************/
+
 #include <stdio.h>
 #include <string.h>
 #include <stdarg.h>
@@ -41,8 +42,6 @@
 #include "ssi.h"
 #include <pico/cyw43_arch.h>
 #include <lwip/apps/httpd.h>
-
-
 
 /**
  * For debug purposes this app enters flash
