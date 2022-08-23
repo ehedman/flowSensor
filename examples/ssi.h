@@ -7,50 +7,39 @@
 #include <pico/cyw43_arch.h>
 #include "water-ctrl.h"
 
-/**
- * The tag order must be consistent
- * with the persistent_data struct here
- * and the order of elements in the html file.
- */
-enum tagOrder {
-    SSID     = 0,
-    PASS,
-    NTP,
-    COU,
-    TOTV,
-    TNKV,
-    FQV,
-    FAGE,
-    FVOL,
-    VERS,
-    IPAD,
-    IPAGW,
-    CURTM
-};
-
 // max length of the tags defaults to be 8 chars
 // LWIP_HTTPD_MAX_TAG_NAME_LEN
+#define FOREACH_TAG(TAG) \
+    TAG(SSID)  \
+    TAG(PASS)  \
+    TAG(NTP)   \
+    TAG(COU)   \
+    TAG(TOTV)  \
+    TAG(TNKV)  \
+    TAG(FQV)   \
+    TAG(FAGE)  \
+    TAG(FVOL)  \
+    TAG(VERS)  \
+    TAG(IPAD)  \
+    TAG(IPAGW) \
+    TAG(CURTM) \
+
+#define GENERATE_ENUM(ENUM) ENUM,
+#define GENERATE_STRING(STRING) #STRING,
+
+enum TAG_ENUM {
+    FOREACH_TAG(GENERATE_ENUM)
+};
+
 const char * __not_in_flash("httpd") ssi_html_tags[] = {
-    "SSID",
-    "PASS",
-    "NTP",
-    "COU",
-    "TOTV",
-    "TNKV",
-    "FQV",
-    "FAGE",
-    "FVOL",
-    "VERS",
-    "IPAD",     /* not posted */
-    "IPAGW",    /* not posted */
-    "CURTM"     /* not posted */
+    FOREACH_TAG(GENERATE_STRING)
 };
 
 u16_t __time_critical_func(ssi_handler)(int iIndex, char *pcInsert, int iInsertLen) {
     extern persistent_data pdata;
     static char buffer_t[60];
     size_t printed;
-    time_t curtime=time();
+    time_t curtime=time(NULL);
     switch (iIndex) {
         case SSID:  /* "SSID" */
             printed = snprintf(pcInsert, iInsertLen, "%s", pdata.ssid);
@@ -80,7 +69,7 @@ u16_t __time_critical_func(ssi_handler)(int iIndex, char *pcInsert, int iInsertL
             printed = snprintf(pcInsert, iInsertLen, "%.0f", pdata.filterVolume);
         break;
         case VERS: /* Program version */
-            printed = snprintf(pcInsert, iInsertLen, "%.0f", pdata.version);
+            printed = snprintf(pcInsert, iInsertLen, "%.1f", pdata.version);
         break;
         case IPAD:  /* I.P address */
             printed = snprintf(pcInsert, iInsertLen, "%s", ip4addr_ntoa(netif_ip4_addr(netif_list)));
@@ -243,42 +232,41 @@ err_t httpd_post_receive_data(void *connection, struct pbuf *p)
                 continue;
             }
 
-                value_token = token + strlen(buf_t);
-                len_token = 0;
-                u16_t tmp;
-                tmp = pbuf_memfind(p, "&", 1, value_token);
+            value_token = token + strlen(buf_t);
+            len_token = 0;
+            u16_t tmp;
+            tmp = pbuf_memfind(p, "&", 1, value_token);
 
-                if (tmp != 0xFFFF) {
-                    len_token = tmp - value_token;
-                } else {
-                    len_token = p->tot_len - value_token;
+            if (tmp != 0xFFFF) {
+                len_token = tmp - value_token;
+            } else {
+                len_token = p->tot_len - value_token;
+            }
+
+            if ((len_token > 0) && (len_token < USER_PASS_BUFSIZE)) {
+                /* provide contiguous storage if p is a chained pbuf */
+                char buf_token[USER_PASS_BUFSIZE];
+                char *param = (char *)pbuf_get_contiguous(p, buf_token, sizeof(buf_token), len_token, value_token);
+                if (param) {
+                    char dec[USER_PASS_BUFSIZE];
+                    param[len_token] = 0;
+                    decode(param, dec); /* URL decode string */
+                    //printf("(%d)param=%s\n", indx, dec);
+
+                    switch (indx) {
+                        case SSID: strcpy(pdata.ssid, dec);         break;
+                        case PASS: strcpy(pdata.pass, dec);         break;
+                        case NTP:  strcpy(pdata.ntp_server, dec);   break;
+                        case COU:  pdata.country = atol(dec);       break;
+                        case TOTV: pdata.totVolume = atof(dec);     break;
+                        case TNKV: pdata.tankVolume = atof(dec);    break;
+                        case FQV:  pdata.sensFq = atof(dec);        break;
+                        case FAGE: pdata.filterAge = atol(dec);     break;
+                        case FVOL: pdata.filterVolume = atof(dec);  break;
+                        default: /* unknown/ignored tag */          break;
+                    }      
                 }
-
-                if ((len_token > 0) && (len_token < USER_PASS_BUFSIZE)) {
-                    /* provide contiguous storage if p is a chained pbuf */
-                    char buf_token[USER_PASS_BUFSIZE];
-                    char *param = (char *)pbuf_get_contiguous(p, buf_token, sizeof(buf_token), len_token, value_token);
-                    if (param) {
-                        char dec[USER_PASS_BUFSIZE];
-                        param[len_token] = 0;
-                        decode(param, dec); /* URL decode string */
-                        //printf("(%d)param=%s\n", indx, dec);
-
-                        switch (indx) {
-                            case SSID: strcpy(pdata.ssid, dec);         break;
-                            case PASS: strcpy(pdata.pass, dec);         break;
-                            case NTP:  strcpy(pdata.ntp_server, dec);   break;
-                            case COU:  pdata.country = atol(dec);       break;
-                            case TOTV: pdata.totVolume = atof(dec);     break;
-                            case TNKV: pdata.tankVolume = atof(dec);    break;
-                            case FQV:  pdata.sensFq = atof(dec);        break;
-                            case FAGE: pdata.filterAge = atol(dec);     break;
-                            case FVOL: pdata.filterVolume = atof(dec);  break;
-                            case VERS: pdata.version = atof(dec);       break;
-                            default: /* unknown tag */                  break;
-                        }      
-                    }
-                }      
+            }      
         }
 
         if (pdata.filterAge < time(NULL)) {
@@ -304,10 +292,10 @@ pdata.sensFq, ctime_r(&pdata.filterAge, buffer_t)), pdata.filterVolume ;
         ret = ERR_VAL;
     }
 
-  /* this function must ALWAYS free the pbuf it is passed or it will leak memory */
-  pbuf_free(p);
+    // This function must ALWAYS free the pbuf it is passed or it will leak memory
+    pbuf_free(p);
 
-  return ret;
+    return ret;
 }
 
 /**
@@ -322,14 +310,15 @@ pdata.sensFq, ctime_r(&pdata.filterAge, buffer_t)), pdata.filterVolume ;
  */
 void httpd_post_finished(void *connection, char *response_uri, u16_t response_uri_len)
 {
-  /* default page is "index" */
-  snprintf(response_uri, response_uri_len, "/index.html");
-  if (current_connection == connection) {
-    if (valid_connection == connection) {
-      /* page succeeded */
-      snprintf(response_uri, response_uri_len, "/index.html");
+    // default page is "index"
+    snprintf(response_uri, response_uri_len, "/index.html");
+
+    if (current_connection == connection) {
+        if (valid_connection == connection) {
+            // page succeeded
+            snprintf(response_uri, response_uri_len, "/index.html");
+        }
+        current_connection = NULL;
+        valid_connection = NULL;
     }
-    current_connection = NULL;
-    valid_connection = NULL;
-  }
 }

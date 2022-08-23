@@ -56,6 +56,8 @@
 #define NTP_TEST_TIME (30 * 1000)
 #define NTP_RESEND_TIME (10 * 1000)
 
+#define CONNECTION_TMO  (time_t)10000
+
 typedef struct NTP_T_ {
     ip_addr_t ntp_server_address;
     bool dns_request_sent;
@@ -148,6 +150,23 @@ bool write_flash(persistent_data *new_data)
     return rval;   
 }
 
+
+/**
+ * Return logical connection status
+ */
+bool net_checkconnection(void)
+{
+    return netIsConnected;
+}
+
+/**
+ * De-init the network
+ */
+void net_disconnect(void)
+{
+    netIsConnected = false; 
+}
+
 /**
  * Connect to AP
  */
@@ -155,6 +174,7 @@ bool wifi_connect(char *ssid, char *pass, uint32_t country)
 {
     int rval = 0;
     time_t retry;
+    static bool partInit;
 
     if (netIsConnected == true) {
         printf("Repeated connection request ignored\n");
@@ -177,33 +197,50 @@ bool wifi_connect(char *ssid, char *pass, uint32_t country)
 
     printf("Attempt connection to %s with pass %s and country code %d\n", ssid, pass, country);
 
-    if ((rval = cyw43_arch_init_with_country(country))) {
-        printf("\ncyw43_arch_init_with_country failed: %s/%d/%d/%d\n", __FILENAME__, __LINE__, country, rval);
-        return netIsConnected;
+    if (partInit == false) {
+
+        if ((rval = cyw43_arch_init_with_country(country))) {
+            printf("\ncyw43_arch_init_with_country failed: %s/%d/%d/%d\n", __FILENAME__, __LINE__, country, rval);
+            return netIsConnected;
+        }
+
+        cyw43_arch_enable_sta_mode();
+
+        // this seems to be the best be can do using the predefined `cyw43_pm_value` macro:
+        // cyw43_wifi_pm(&cyw43_state, CYW43_PERFORMANCE_PM);
+        // however it doesn't use the `CYW43_NO_POWERSAVE_MODE` value, so we do this instead:
+        cyw43_wifi_pm(&cyw43_state, cyw43_pm_value(CYW43_NO_POWERSAVE_MODE, 20, 1, 1, 1));
+
+        partInit = true;
     }
-
-    cyw43_arch_enable_sta_mode();
-
-    // this seems to be the best be can do using the predefined `cyw43_pm_value` macro:
-    // cyw43_wifi_pm(&cyw43_state, CYW43_PERFORMANCE_PM);
-    // however it doesn't use the `CYW43_NO_POWERSAVE_MODE` value, so we do this instead:
-    cyw43_wifi_pm(&cyw43_state, cyw43_pm_value(CYW43_NO_POWERSAVE_MODE, 20, 1, 1, 1));
 
     for (int i = 0; i < 3; i++) {
         retry = time(NULL);
-        if ((rval = cyw43_arch_wifi_connect_timeout_ms(ssid, pass, CYW43_AUTH_WPA2_AES_PSK, 10000))) {
+        if ((rval = cyw43_arch_wifi_connect_timeout_ms(ssid, pass, CYW43_AUTH_WPA2_AES_PSK, CONNECTION_TMO))) {
             printf("\ncyw43_arch_wifi_connect_timeout_ms failed: %s/%d/%s/%d\n", __FILENAME__, __LINE__, ssid, rval);
+            switch (rval) {
+                case CYW43_LINK_NONET:      printf("No matching SSID found");     break;
+                case CYW43_LINK_BADAUTH:    printf("Authenticatation failure");   break;
+                case CYW43_LINK_FAIL:       printf("Link failure");               break;
+                default: printf("Connection filed with return value = %d", rval); break;
+            }
+            printf(" after %llu seconds. Timeout was set to %llu\n", time(NULL)-retry, CONNECTION_TMO/1000);
+
             if (rval < 0 && time(NULL) - retry < 4) {
                 printf("Retry %d/3\n", i+1);
                 sleep_ms(2000);
             } else {
-                return netIsConnected;
+                netIsConnected = false;
             }
         }
         if (rval == 0) {
             netIsConnected = true;
             break;
         }
+    }
+
+    if (netIsConnected == false) {
+        net_disconnect();
     }
 
     return netIsConnected;
@@ -489,56 +526,35 @@ static bool net_ntp(char *ntp_server)
     return rval;
 }
 
-bool netNTP_connect(persistent_data *pdata)
+bool netNTP_connect(char *server)
 {
     bool rval = false;
     static char buf_ntp[20];
+    static bool isConnected;
 
-    if (netIsConnected == false) {
+    if (netIsConnected == true && isConnected == false) {
 
-        if (wifi_connect(pdata->ssid, pdata->pass, pdata->country) == false) {
-            return rval;
+        if (!strncmp(server, "0.0.0.0", 7)) {
+            // Default gw host assumed to hold NTP services
+            strncpy(buf_ntp, ip4addr_ntoa(netif_ip4_gw(netif_list)), sizeof(buf_ntp));
         } else {
-            if (!strncmp(pdata->ntp_server, "0.0.0.0", 7)) {
-                // Default gw host assumed to hold NTP services
-                strncpy(buf_ntp, ip4addr_ntoa(netif_ip4_gw(netif_list)), sizeof(buf_ntp));
-            } else {
-                strncpy(buf_ntp, pdata->ntp_server, sizeof(buf_ntp));
-            }
-            if (net_ntp(buf_ntp) == false) {
-                return rval;
-            }
-            for (int i = 0; i < NTP_TEST_TIME/1000; i++) {
-                sleep_ms(1000);
-                if (rtcIsSetDone == true ) { // Set in the ntp_result() or ntp_failed_handler() callbacks
-                    rtcIsSetDone = false;
-                    rval =  true;
-                    break;
-                }
+            strncpy(buf_ntp, server, sizeof(buf_ntp));
+        }
+        if (net_ntp(buf_ntp) == false) {
+            return rval;
+        }
+        for (int i = 0; i < NTP_TEST_TIME/1000; i++) {
+            sleep_ms(1000);
+            if (rtcIsSetDone == true ) { // Set in the ntp_result() or ntp_failed_handler() callbacks
+                rtcIsSetDone = false;
+                isConnected = rval =  true;
+                break;
             }
         }
+
     }
 
     return rval;
-}
-
-/**
- * Return logical connection status
- */
-bool net_checkconnection(void)
-{
-    return netIsConnected;
-}
-
-/**
- * De-init the network
- */
-void net_disconnect(void)
-{
-    if (netIsConnected == true) {
-        cyw43_arch_deinit();
-        netIsConnected = false;
-    }
 }
 
 #if 0

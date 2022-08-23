@@ -215,7 +215,7 @@
 
     <tr>
         <td><label for="totv">Total Volume</label></td>
-        <td><input type="number"  min="4" title="In Litres" id="totv" name="totv" value="<!--#TOTV-->"></td>
+        <td><input type="number"  min="4" title="In Litres" name="totv" value="<!--#TOTV-->"></td>
         <td>Volume currently used</td>
     </tr>
 
@@ -249,17 +249,17 @@
 
     <tr>
         <td><label for="vers">Firmware Version</label></td>
-        <td><input type="text" style="background: lightgray" readonly id="vers" name="vers" value="<!--#VERS-->"></td>
+        <td><input type="text" style="background: lightgray" readonly value="<!--#VERS-->"></td>
         <td>Version of this application</td>
     </tr>
     <tr>
         <td><label for="ipad">I.P address</label></td>
-        <td><input type="text" style="background: lightgray" readonly id="ipad" value="<!--#IPAD-->"></td>
+        <td><input type="text" title"Device I.P" style="background: lightgray" readonly value="<!--#IPAD-->"></td>
         <td>DHCP I.P address assigned for this device</td>
     </tr>
     <tr>
         <td><label for="ipagw">GW I.P address</label></td>
-        <td><input type="text" style="background: lightgray" readonly id="ipagw" value="<!--#IPAGW-->"></td>
+        <td><input type="text" title="Default gateway" style="background: lightgray" readonly value="<!--#IPAGW-->"></td>
         <td>DHCP Default gateway I.P assigned for this device</td>
     </tr>
  

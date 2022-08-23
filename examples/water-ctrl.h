@@ -39,14 +39,14 @@ typedef struct p_data {
 /**
  * Common functions used in this app
  */
-extern bool     netNTP_connect(persistent_data *pdata);
+extern bool     netNTP_connect(char *server);
 extern void     net_disconnect(void);
 extern bool     wifi_connect(char *ssid, char *pass, uint32_t country);
 extern bool     net_checkconnection(void);
 extern void     read_flash(persistent_data *pdata);
 extern bool     write_flash(persistent_data *new_data);
 extern void     goDormant(int dpin);
-extern time_t   _time();
+extern time_t   _time(time_t *tloc);
 
 #define PICO_CYW43_ARCH_THREADSAFE_BACKGROUND 1
 

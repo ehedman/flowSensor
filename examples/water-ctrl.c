@@ -343,7 +343,6 @@ static void core1Thread(void)
 
         while(1) 
         {
-
             int f = measureFrequency(HzmeasurePin, 1000);
 
             FlowFreq = f;   // Enter result to global space
@@ -473,8 +472,10 @@ pdata.sensFq, ctime_r(&pdata.filterAge, buffer_t)), pdata.filterVolume ;
     }
 
 #if NETRTC
-    if (netNTP_connect(&pdata) == false) {
-        printf("\nWiFi netNTP_operation failed\n");
+    if (wifi_connect(pdata.ssid, pdata.pass, pdata.country) == true) {
+        if (netNTP_connect(pdata.ntp_server) == false) {
+            printf("\nWiFi netNTP_operation failed\n");
+        }
     }
 #endif
 
@@ -490,11 +491,7 @@ pdata.sensFq, ctime_r(&pdata.filterAge, buffer_t)), pdata.filterVolume ;
         httpd_init();
         ssi_init();
         printf("Http server initialized.\n");
-        // infinite loop for now
-        //for (;;) {sleep_ms(100);}
     }
-
-    //net_disconnect();
 
     curtime = time(NULL);
     printf("Current RTC time is %s", ctime_r(&curtime, buffer_t));
@@ -542,6 +539,8 @@ pdata.sensFq, ctime_r(&pdata.filterAge, buffer_t)), pdata.filterVolume ;
 
         while (FlowFreq == 0.0) {
 
+            static int tryConnect;
+
             sleep_ms(1000);
 
             DEV_SET_PWM(0); 
@@ -550,6 +549,19 @@ pdata.sensFq, ctime_r(&pdata.filterAge, buffer_t)), pdata.filterVolume ;
                 goDormant(dormantPin);    // Save some more energy (some ticks may be lost at resume)
                 inactivityTimer = INACTIVITY_TIME;
                 break;  // We do have flow now
+            }
+
+            if (net_checkconnection() == false && tryConnect++ >= 10) {
+                tryConnect = 0;
+                if (wifi_connect(pdata.ssid, pdata.pass, pdata.country) == true) {
+                    printf("got I.P adress %s\n", ip4addr_ntoa(netif_ip4_addr(netif_list)));
+                    printf("gateway adress %s\n", ip4addr_ntoa(netif_ip4_gw(netif_list)));
+                    (void)netNTP_connect(pdata.ntp_server);
+                    httpd_init();
+                    ssi_init();
+                    printf("Http server initialized.\n");
+                }
+                continue;
             }
 
             if (doSave == true && delSave-- == 0) { // Avoid repeated saves for rapid events
