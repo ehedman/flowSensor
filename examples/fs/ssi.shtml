@@ -269,7 +269,7 @@
 </form>
 <button type="button" title="Refresh Page" onclick="location.reload()">Refresh</button>
 
-&nbsp;&nbsp;&nbsp;<a href="/panel.html">About the Control Panel</a>
+&nbsp;&nbsp;&nbsp;<a href="/panel.html?tvol=<!--#TNKV-->">About the Control Panel</a>
 
 <p>NOTE: Changing any of the SSID, PASS and Country Code parameters will result a lost connection the next time this device is
 restarted. You then have to regain the connection by joining that new WiFi network.</p>

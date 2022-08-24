@@ -37,5 +37,7 @@ Once integrated with the Waveshare build structure:
 - [krzmaz's blog](http://krzmaz.com/2022-08-15-creating-a-web-server-on-raspberry-pi-pico-w-using-pico-sdk-and-lwip)
 
 ### Screenshot
-Soon
+<img src="http://hedmanshome.se/digi242-1.png" width=100%></br>
+<img src="http://hedmanshome.se/digi242-2.png" width=100%></br>
+
     

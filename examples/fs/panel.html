@@ -10,29 +10,92 @@
 
     <style>
 
+    table {
+        font-family: arial, sans-serif;
+        border-collapse: collapse;
+        width: 100%;
+    }
+
+    td, th {
+        border: 1px solid #dddddd;
+        text-align: left;
+        padding: 8px;
+        width: 30%;
+    }
+
+    tr:nth-child(even) {
+        background-color: #dddddd;
+    }
+
     body {
         padding: 20px;
     }
 
-    </style>
-</head>
-<body>
+    img{
+        display: block;
+        margin-left: auto;
+        margin-right: auto;
+    }
 
-<img src="/panel.png" alt="The Control Panel" width="300" height="256">
-<br>
-<b>Button Legend:</b><br>
-<b>Joystick:</b><br>
-Left: TBD<br>
-Right: TBD<br>
-Up: TBD<br>
-Down: TBD<br>
-<br><br>
-<b>S button:</b> Show current flow status.<br>
-<b>R button:</b> Reset water used to zero.<br>
+    </style>
+
+    <script>
+
+    function init()
+    {
+        var url_string = window.location;
+        var url = new URL(url_string);
+        var tvol = url.searchParams.get("tvol");
+        document.getElementById("tvolTag").innerHTML=tvol;
+    }
+
+    </script>
+
+</head>
+
+<body onload="init()">
+
+<table>
+    <tr style="border: 0">
+        <td style="border: 0">Measures your <b id="tvolTag"></b> litres of water flow to help you know when to change your water filter or fill up your water tank.</td>
+        <td style="border: 0"><img src="/panel.png" title="Control Panel" alt="The Control Panel" width="300" height="256"></td>
+        <td style="border: 0">
+            The Digiflow 242 flow meter measures litres, filter expiration dates, and flow rate.<br>
+            The flow meter can read instantaneous flow rate, single cumulative flow and total cumulative flows.<br>
+            When the liquid flows, it will automatically turn on the metering.<br>Press the Staus button to turn the display on. 
+        </td>
+    </tr>
+    <tr>
+    <th>Type</th>
+    <th>Action</th>
+    <th>Description</th>
+    </tr>
+    <tr>
+        <td>Joystick</td><td>Up</td><td>Fine-tune the sensors' Q value + 0.5</td>
+    </tr>
+    <tr>
+        <td>Joystick</td><td>Down</td><td>Fine-tune the sensors' Q value - 0.5</td>
+    </tr>
+    <tr>
+        <td>Joystick</td><td>Left</td><td>Adjust filter expiration date - month</td>
+    </tr>
+    <tr>
+        <td>Joystick</td><td>Right</td><td>Adjust filter expiration date + month</td>
+    </tr>
+    <tr>
+        <td>Joystick</td><td>Middle</td><td>Reset filter data (filter replaced)</td>
+    </tr>
+    <tr>
+        <td>Button <b>S</b></td><td>Push</td><td>Show current tank status</td>
+    </tr>
+    <tr>
+        <td>Button <b>R</b></td><td>Push</td><td> Reset water used to zero</td>
+    </tr>
+</table>
+
 <br>
 
 <a href="javascript:history.back()">Go Back</a>
-
 
 </body>
 </html>
