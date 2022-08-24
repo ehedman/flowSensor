@@ -162,7 +162,7 @@
     <tr>
     <th>Property</th>
     <th>Value</th>
-    <th>Description></th>
+    <th>Description</th>
     </tr>
 
     <tr>  
@@ -189,9 +189,9 @@
                 <option value="21333">USA</option>
                 <option value="16967">UK</option>
                 <option value="17747">Sweden</option>
-                <option value="20302">Norway</otion>
-                <option value="19268">Denmark</otion>
-                <option value="18758">Finland</otion>
+                <option value="20302">Norway</option>
+                <option value="19268">Denmark</option>
+                <option value="18758">Finland</option>
                 <!--More? See Pico SDK lib/cyw43-driver/src/cyw43_country.h -->
             </select> 
         </td>
@@ -215,7 +215,7 @@
 
     <tr>
         <td><label for="totv">Total Volume</label></td>
-        <td><input type="number"  min="4" title="In Litres" name="totv" value="<!--#TOTV-->"></td>
+        <td><input type="number"  min="4" title="In Litres" id="totv" name="totv" value="<!--#TOTV-->"></td>
         <td>Volume currently used</td>
     </tr>
 
@@ -249,17 +249,17 @@
 
     <tr>
         <td><label for="vers">Firmware Version</label></td>
-        <td><input type="text" style="background: lightgray" readonly value="<!--#VERS-->"></td>
+        <td><input type="text" style="background: lightgray" id="vers" readonly value="<!--#VERS-->"></td>
         <td>Version of this application</td>
     </tr>
     <tr>
         <td><label for="ipad">I.P address</label></td>
-        <td><input type="text" title"Device I.P" style="background: lightgray" readonly value="<!--#IPAD-->"></td>
+        <td><input type="text" title="Device I.P" style="background: lightgray" id="ipad" readonly value="<!--#IPAD-->"></td>
         <td>DHCP I.P address assigned for this device</td>
     </tr>
     <tr>
         <td><label for="ipagw">GW I.P address</label></td>
-        <td><input type="text" title="Default gateway" style="background: lightgray" readonly value="<!--#IPAGW-->"></td>
+        <td><input type="text" title="Default gateway" style="background: lightgray" id="ipagw" readonly value="<!--#IPAGW-->"></td>
         <td>DHCP Default gateway I.P assigned for this device</td>
     </tr>
  
@@ -268,6 +268,8 @@
 <input type="submit" value="Submit" title="Save changes" style="float: right;">
 </form>
 <button type="button" title="Refresh Page" onclick="location.reload()">Refresh</button>
+
+&nbsp;&nbsp;&nbsp;<a href="/panel.html">About the Control Panel</a>
 
 <p>NOTE: Changing any of the SSID, PASS and Country Code parameters will result a lost connection the next time this device is
 restarted. You then have to regain the connection by joining that new WiFi network.</p>

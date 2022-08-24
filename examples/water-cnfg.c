@@ -219,10 +219,10 @@ bool wifi_connect(char *ssid, char *pass, uint32_t country)
         if ((rval = cyw43_arch_wifi_connect_timeout_ms(ssid, pass, CYW43_AUTH_WPA2_AES_PSK, CONNECTION_TMO))) {
             printf("\ncyw43_arch_wifi_connect_timeout_ms failed: %s/%d/%s/%d\n", __FILENAME__, __LINE__, ssid, rval);
             switch (rval) {
-                case CYW43_LINK_NONET:      printf("No matching SSID found");     break;
-                case CYW43_LINK_BADAUTH:    printf("Authenticatation failure");   break;
-                case CYW43_LINK_FAIL:       printf("Link failure");               break;
-                default: printf("Connection filed with return value = %d", rval); break;
+                case CYW43_LINK_NONET:      printf("No matching SSID found");       break;
+                case CYW43_LINK_BADAUTH:    printf("Authenticatation failure");     break;
+                case CYW43_LINK_FAIL:       printf("Link failure");                 break;
+                default: printf("Connection fail with return value = %d", rval);    break;
             }
             printf(" after %llu seconds. Timeout was set to %llu\n", time(NULL)-retry, CONNECTION_TMO/1000);
 

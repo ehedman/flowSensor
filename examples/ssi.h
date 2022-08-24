@@ -35,11 +35,13 @@ const char * __not_in_flash("httpd") ssi_html_tags[] = {
     FOREACH_TAG(GENERATE_STRING)
 };
 
-u16_t __time_critical_func(ssi_handler)(int iIndex, char *pcInsert, int iInsertLen) {
+u16_t __time_critical_func(ssi_handler)(int iIndex, char *pcInsert, int iInsertLen)
+{
     extern persistent_data pdata;
     static char buffer_t[60];
     size_t printed;
     time_t curtime=time(NULL);
+
     switch (iIndex) {
         case SSID:  /* "SSID" */
             printed = snprintf(pcInsert, iInsertLen, "%s", pdata.ssid);
@@ -63,7 +65,7 @@ u16_t __time_critical_func(ssi_handler)(int iIndex, char *pcInsert, int iInsertL
             printed = snprintf(pcInsert, iInsertLen, "%.0f", pdata.sensFq);
         break;
         case FAGE: /* Filter age */
-            printed = snprintf(pcInsert, iInsertLen, "%lu", pdata.filterAge);
+            printed = snprintf(pcInsert, iInsertLen, "%llu", pdata.filterAge);
         break;
         case FVOL: /* Filter volume */
             printed = snprintf(pcInsert, iInsertLen, "%.0f", pdata.filterVolume);
@@ -92,7 +94,8 @@ u16_t __time_critical_func(ssi_handler)(int iIndex, char *pcInsert, int iInsertL
 /**
  * Set the SSI handler function
  */
-void ssi_init() {
+void ssi_init()
+{
     size_t i;
 
     for (i = 0; i < LWIP_ARRAYSIZE(ssi_html_tags); i++) {
@@ -109,7 +112,7 @@ void ssi_init() {
     http_set_ssi_handler(ssi_handler, ssi_html_tags, LWIP_ARRAYSIZE(ssi_html_tags));
 }
 
-static int ishex(int x)
+static inline int ishex(int x)
 {
 	return	(x >= '0' && x <= '9')	||
 		(x >= 'a' && x <= 'f')	||

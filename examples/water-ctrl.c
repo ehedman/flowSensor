@@ -480,8 +480,7 @@ pdata.sensFq, ctime_r(&pdata.filterAge, buffer_t)), pdata.filterVolume ;
 #endif
 
     if (waterCtrlInit() == false) {
-        net_disconnect();
-        while(1) sleep_ms(10000);
+        panic("\nwaterCtrlInit failed: %s line %d\n", __FILENAME__, __LINE__);
     }
 
     if (net_checkconnection() == true) {
@@ -564,7 +563,7 @@ pdata.sensFq, ctime_r(&pdata.filterAge, buffer_t)), pdata.filterVolume ;
                 continue;
             }
 
-            if (doSave == true && delSave-- == 0) { // Avoid repeated saves for rapid events
+            if (doSave == true && delSave-- <= 0) { // Avoid repeated saves for rapid events
                 printf("Delayed save\n");
                 if (write_flash(&pdata) == false) {
                     printf("Delayed save failed\n");
