@@ -23,6 +23,7 @@
     TAG(IPAD)  \
     TAG(IPAGW) \
     TAG(CURTM) \
+    TAG(UPTM)  \
 
 #define GENERATE_ENUM(ENUM) ENUM,
 #define GENERATE_STRING(STRING) #STRING,
@@ -35,9 +36,25 @@ const char * __not_in_flash("httpd") ssi_html_tags[] = {
     FOREACH_TAG(GENERATE_STRING)
 };
 
+static inline char* sec_today(time_t nsec, char* buf_t)
+{
+    int day = nsec / (24 * 3600);
+ 
+    nsec= nsec % (24 * 3600);
+    int hour = nsec / 3600;
+ 
+    nsec %= 3600;
+    int minutes = nsec / 60 ;
+
+    sprintf(buf_t, "%d days, %d hours, %d minutes", day, hour, minutes);
+
+    return buf_t;
+}
+
 u16_t __time_critical_func(ssi_handler)(int iIndex, char *pcInsert, int iInsertLen)
 {
     extern persistent_data pdata;
+    extern time_t startTime;
     static char buffer_t[60];
     size_t printed;
     time_t curtime=time(NULL);
@@ -62,7 +79,7 @@ u16_t __time_critical_func(ssi_handler)(int iIndex, char *pcInsert, int iInsertL
             printed = snprintf(pcInsert, iInsertLen, "%.0f", pdata.tankVolume);
         break;
         case FQV:   /* Q/F value */
-            printed = snprintf(pcInsert, iInsertLen, "%.0f", pdata.sensFq);
+            printed = snprintf(pcInsert, iInsertLen, "%.1f", pdata.sensFq);
         break;
         case FAGE: /* Filter age */
             printed = snprintf(pcInsert, iInsertLen, "%llu", pdata.filterAge);
@@ -81,6 +98,9 @@ u16_t __time_critical_func(ssi_handler)(int iIndex, char *pcInsert, int iInsertL
         break;
         case CURTM: /* Today */
             printed = snprintf(pcInsert, iInsertLen, "%s", ctime_r(&curtime, buffer_t));
+        break;
+        case UPTM: /* Uptime */
+            printed = snprintf(pcInsert, iInsertLen, "%s", sec_today(curtime-startTime, buffer_t));
         break;
         default:    /* unknown tag */
         printed = 0;

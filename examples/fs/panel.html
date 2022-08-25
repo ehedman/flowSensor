@@ -19,7 +19,7 @@
     td, th {
         border: 1px solid #dddddd;
         text-align: left;
-        padding: 8px;
+        padding: 3px;
         width: 30%;
     }
 
@@ -32,32 +32,38 @@
     }
 
   .tank {
-        margin: 3%;
+        margin: 0;
         position: relative;
     }
+
+    .center-div {
+        display: flex;
+        justify-content: center;
+    }
+
     .tnkv-txt {
         position: absolute;
-        top: 37px;
-        left: 50px;
-        font-size: 15px;
+        top: 64px;
+        left: 76px;
+        font-size: 20px;
     } 
     .rem-txt {
         position: absolute;
-        bottom: 71px;
-        left: 50px;
-        font-size: 15px;
+        top: 85px;
+        left: 76px;
+        font-size: 20px;
     }
     .fxd-txt {
         position: absolute;
-        bottom: 56px;
-        left: 50px;
-        font-size: 15px;
+        top: 106px;
+        left: 76px;
+        font-size: 20px;
     }
     .flv-txt {
         position: absolute;
-        bottom: 42px;
-        left: 50px;
-        font-size: 15px;
+        top: 128px;
+        left: 76px;
+        font-size: 20px;
     }
 
     </style>
@@ -107,24 +113,25 @@
 <body onload="init()">
 
 <table>
-    <tr style="border: 0">
+    <tr>
         <td style="border: 0">Measures your <b id="tvolTag"></b> litres of water flow to help you know when to 
-                change your water filter or fill up your water tank.</td>
+                change your water filter or fill up your water tank.
+        </td>
         <td style="border: 0">
-
-        <div class="tank">
-            <img title="Control Panel" alt="The Control Panel" width="200" height="168" src="/panel.png">
-            <h3 id="tnkv" class="tnkv-txt">.</h3>
-            <h3 id="rem"  class="rem-txt">.</h3>
-            <h3 id="fxd"  class="fxd-txt">.</h3> 
-            <h3 id="flv"  class="flv-txt">.</h3>
-        </div>
-
+            <div class="center-div">
+                <div class="tank">
+                    <img title="Control Panel" alt="The Control Panel" width="300" height="256" src="panel.png">
+                    <h3 id="tnkv" class="tnkv-txt">.</h3>
+                    <h3 id="rem"  class="rem-txt">.</h3>
+                    <h3 id="fxd"  class="fxd-txt">.</h3> 
+                    <h3 id="flv"  class="flv-txt">.</h3>
+                </div>
+            </div>
         </td>
         <td style="border: 0">
             The Digiflow 242 flow meter measures litres, filter expiration dates, and flow rate.<br>
             The flow meter can read instantaneous flow rate, single cumulative flow and total cumulative flows.<br>
-            When the liquid flows, it will automatically turn on the metering.<br>Press the Staus button to turn the display on. 
+            When the liquid flows, it will automatically turn on the metering.<br>Press the Status button to turn the display on. 
         </td>
     </tr>
 
@@ -170,7 +177,7 @@
         <td colspan="2">REM=&numero;L</td><td>Currently remaining tank volume</td>
     </tr>
     <tr>
-        <td colspan="2">FXD=&numero;L</td><td>Filter expiration date (D/M/Y)</td>
+        <td colspan="2">FXD=DATE</td><td>Filter expiration date (M/D/Y)</td>
     </tr>
     <tr>
         <td colspan="2">FLV=&numero;L</td><td>Volume passed through filter</td>

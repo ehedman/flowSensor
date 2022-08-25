@@ -123,6 +123,12 @@ static uint16_t FlowFreq =          0;  // Live flow frequency
 static int sessTick;
 
 /**
+ * Start time used for uptime
+ * feature in ssi.h
+ */
+time_t startTime;
+
+/**
  * Persistent data in flash
  */
 persistent_data pdata;
@@ -492,7 +498,7 @@ pdata.sensFq, ctime_r(&pdata.filterAge, buffer_t)), pdata.filterVolume ;
         printf("Http server initialized.\n");
     }
 
-    curtime = time(NULL);
+    startTime = curtime = time(NULL);
     printf("Current RTC time is %s", ctime_r(&curtime, buffer_t));
 
     tmo = 3;
