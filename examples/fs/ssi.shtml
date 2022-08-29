@@ -29,6 +29,8 @@
 
     body {
         padding: 20px;
+        min-width: 1100px; 
+        width: auto !important;
     }
 
     </style>
@@ -204,7 +206,7 @@
         <td><label for="cou">Country Code</label></td>
         <td>
             <input type="text" readonly id="cou" name="cou" value="<!--#COU-->">
-            <select name="couopt" id="couopt" title="CountryCode" onchange="upd_country(this)">
+            <select name="couopt" id="couopt" title="CountryCode" style="width: 140px;" onchange="upd_country(this)">
                 <option selected value="0">Select new</option>
                 <option value="21333">USA</option>
                 <option value="16967">UK</option>
@@ -222,7 +224,7 @@
         <td><label for="ntp">NTP Server</label></td>
         <td>
             <input type="text" id="ntp" name="ntp" value="<!--#NTP-->">
-            <select name="ntpopt" id="ntpopt" title="ntpopt" onchange="upd_ntp(this)">
+            <select name="ntpopt" id="ntpopt" title="ntpopt" style="width: 140px;" onchange="upd_ntp(this)">
                 <option selected value="0">Select new</option>
                 <option value="0.0.0.0">Auto</option>
                 <option value="time.google.com">time.google.com</option>
@@ -295,7 +297,7 @@
 <button type="button" title="Undo changes" onclick="location.reload(true)">Refresh</button>
 
 &nbsp;&nbsp;&nbsp;
-<a href="panel.html?tvol=<!--#TNKV-->&tnkv=<!--#TOTV-->&fxd=<!--#FAGE-->&flv=<!--#FVOL-->">About the Control Panel</a>
+<a href="/panel.html?tvol=<!--#TNKV-->&tnkv=<!--#TOTV-->&fxd=<!--#FAGE-->&flv=<!--#FVOL-->">About the Control Panel</a>
 
 <p>&sup1; Reboot required.</p>
 <p>Changing any of the SSID, PASS and Country Code parameters will result a lost connection the next time this device is
