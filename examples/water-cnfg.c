@@ -40,15 +40,66 @@
 #include <hardware/sync.h>
 #include <pico/sleep.h>
 #include <pico/util/datetime.h>
-#include "hardware/clocks.h"
-#include "hardware/rosc.h"
-#include "hardware/structs/scb.h"
+#include <hardware/clocks.h>
+#include <hardware/rosc.h>
+#include <hardware/structs/scb.h>
 #include "water-ctrl.h"
+#include <lwip/opt.h>
+#if defined NETRTC && NETRTC == 1
 #include <pico/cyw43_arch.h>
 #include <lwip/dns.h>
 #include <lwip/pbuf.h>
 #include <lwip/udp.h>
-#include "lwip/tcp.h"
+#include <lwip/tcp.h>
+#include <lwip/ip_addr.h>
+#endif
+
+#if defined NETRTC && NETRTC == 0
+#undef LWIP_RAW
+#endif
+
+#if LWIP_RAW
+#include <lwip/mem.h>
+#include <lwip/raw.h>
+#include <lwip/icmp.h>
+#include <lwip/netif.h>
+#include <lwip/sys.h>
+#include <lwip/timeouts.h>
+#include <lwip/inet_chksum.h>
+#include <lwip/prot/ip4.h>
+#include <lwip/opt.h>
+
+/**
+ * Default ping delay - in milliseconds
+ */
+#define PING_DELAY     2000
+
+/** 
+ * ping identifier - must fit on a u16_t
+ */
+#ifndef PING_ID
+#define PING_ID        0xAFAF
+#endif
+
+/**
+ * ping additional data size to include in the packet
+ */
+#ifndef PING_DATA_SIZE
+#define PING_DATA_SIZE 32
+#endif
+
+/**
+ * ping variables
+ */
+static ip_addr_t* ping_target;
+static u16_t ping_seq_num;
+static struct raw_pcb *ping_pcb;
+static bool goodPing = true;
+static bool pRawisInit;
+
+#endif /* LWIP_RAW */
+
+#if defined NETRTC && NETRTC == 1
 
 #define NTP_MSG_LEN 48
 #define NTP_PORT 123
@@ -56,7 +107,7 @@
 #define NTP_TEST_TIME (30 * 1000)
 #define NTP_RESEND_TIME (10 * 1000)
 
-#define CONNECTION_TMO  (time_t)10000
+#define CONNECTION_TMO  (time_t)20000
 
 typedef struct NTP_T_ {
     ip_addr_t ntp_server_address;
@@ -67,7 +118,9 @@ typedef struct NTP_T_ {
 } NTP_T;
 
 static bool rtcIsSetDone = false;
-static bool netIsConnected = false;
+static bool netIsConnected = nOFF;
+
+#endif /* NETRTC */
 
 /**
  * We're going to erase and reprogram a region 512k from the start of flash.
@@ -150,7 +203,7 @@ bool write_flash(persistent_data *new_data)
     return rval;   
 }
 
-
+#if defined NETRTC && NETRTC == 1
 /**
  * Return logical connection status
  */
@@ -160,11 +213,11 @@ bool net_checkconnection(void)
 }
 
 /**
- * De-init the network
+ * Set logical connection status
  */
-void net_disconnect(void)
+void net_setconnection(bool mode)
 {
-    netIsConnected = false; 
+    netIsConnected = mode;
 }
 
 /**
@@ -176,12 +229,12 @@ bool wifi_connect(char *ssid, char *pass, uint32_t country)
     time_t retry;
     static bool partInit;
 
-    if (netIsConnected == true) {
+    if (netIsConnected == nON) {
         printf("Repeated connection request ignored\n");
         return netIsConnected;
     }
 
-    netIsConnected = false;
+    netIsConnected = nOFF;
 
     ssid[SSID_MAX-1] = pass[PASS_MAX-1] = '\0';
 
@@ -189,6 +242,7 @@ bool wifi_connect(char *ssid, char *pass, uint32_t country)
         printf("SSID contains illegal characters\n");
         return netIsConnected;
     }
+
 
     if (!pass[strspn(pass, OKCHAR)] == '\0') {
         printf("WPA2 password contains illegal characters\n");
@@ -217,30 +271,30 @@ bool wifi_connect(char *ssid, char *pass, uint32_t country)
     for (int i = 0; i < 3; i++) {
         retry = time(NULL);
         if ((rval = cyw43_arch_wifi_connect_timeout_ms(ssid, pass, CYW43_AUTH_WPA2_AES_PSK, CONNECTION_TMO))) {
-            printf("\ncyw43_arch_wifi_connect_timeout_ms failed: %s/%d/%s/%d\n", __FILENAME__, __LINE__, ssid, rval);
+            //printf("\ncyw43_arch_wifi_connect_timeout_ms failed: %s/%d/%s/%d\n", __FILENAME__, __LINE__, ssid, rval);
             switch (rval) {
                 case CYW43_LINK_NONET:      printf("No matching SSID found");       break;
                 case CYW43_LINK_BADAUTH:    printf("Authenticatation failure");     break;
                 case CYW43_LINK_FAIL:       printf("Link failure");                 break;
                 default: printf("Connection fail with return value = %d", rval);    break;
             }
-            printf(" after %llu seconds. Timeout was set to %llu\n", time(NULL)-retry, CONNECTION_TMO/1000);
+            printf(" after %llu seconds. Timeout was set to %llus\n", time(NULL)-retry, CONNECTION_TMO/1000);
 
             if (rval < 0 && time(NULL) - retry < 4) {
                 printf("Retry %d/3\n", i+1);
                 sleep_ms(2000);
             } else {
-                netIsConnected = false;
+                netIsConnected = nOFF;
             }
         }
         if (rval == 0) {
-            netIsConnected = true;
+            char *gw;
+            printf("got I.P adress %s\n", ip4addr_ntoa(netif_ip4_addr(netif_list)));
+            printf("gateway adress %s\n", (gw=ip4addr_ntoa(netif_ip4_gw(netif_list))));
+            goodPing = netIsConnected = nON;
+            ping_init(gw);
             break;
         }
-    }
-
-    if (netIsConnected == false) {
-        net_disconnect();
     }
 
     return netIsConnected;
@@ -349,20 +403,6 @@ static time_t ds3231ReadTime()
 }
 
 /**
- * A private implementation of time()
- */
-time_t _time(time_t *tloc)
-{
-#if NETRTC
-    return ds3231ReadTime() + TZ_RZONE;
-#else
-    static int sec;
-    sec += 10;
-    return 1660411426 + sec;    // Fake time around Sat Aug 13 17:23 2022
-#endif
-}
-
-/**
  * Wrapper for the ds3231
  */
 static void set_rtc(struct tm *utc)
@@ -372,11 +412,11 @@ static void set_rtc(struct tm *utc)
 
 /**
  * Called with results of the NTP operation
-*/
+ */
 static void ntp_result(NTP_T* state, int status, time_t *result) {
     if (status == 0 && result) {
         struct tm *utc = gmtime(result);
-        printf("got ntp response: %02d/%02d/%04d %02d:%02d:%02d\n", utc->tm_mday, utc->tm_mon + 1, utc->tm_year + 1900,
+        printf("Got ntp response: %02d/%02d/%04d %02d:%02d:%02d\n", utc->tm_mday, utc->tm_mon + 1, utc->tm_year + 1900,
                utc->tm_hour, utc->tm_min, utc->tm_sec);
         printf("set RTC accordingly\n");
         set_rtc(utc);
@@ -392,9 +432,16 @@ static void ntp_result(NTP_T* state, int status, time_t *result) {
 }
 
 /**
- * Foward decalaration of ntp_falied handler
+ * NTP request failed callback
  */
-static int64_t ntp_failed_handler(alarm_id_t id, void *user_data);
+static int64_t ntp_failed_handler(alarm_id_t id, void *user_data)
+{
+    NTP_T* state = (NTP_T*)user_data;
+    printf("\nntp request failed\n");
+    ntp_result(state, -1, NULL);
+    rtcIsSetDone = true;
+    return 0;
+}
 
 /**
  * Make an NTP request
@@ -414,14 +461,6 @@ static void ntp_request(NTP_T *state) {
     cyw43_arch_lwip_end();
 }
 
-static int64_t ntp_failed_handler(alarm_id_t id, void *user_data)
-{
-    NTP_T* state = (NTP_T*)user_data;
-    printf("ntp request failed\n");
-    ntp_result(state, -1, NULL);
-    rtcIsSetDone = true;
-    return 0;
-}
 
 /**
  * Call back with a DNS result
@@ -430,10 +469,10 @@ static void ntp_dns_found(const char *hostname, const ip_addr_t *ipaddr, void *a
     NTP_T *state = (NTP_T*)arg;
     if (ipaddr) {
         state->ntp_server_address = *ipaddr;
-        printf("ntp address %s\n", ip4addr_ntoa(ipaddr));
+        printf("\nntp address %s\n", ip4addr_ntoa(ipaddr));
         ntp_request(state);
     } else {
-        printf("ntp dns request failed\n");
+        printf("\nntp dns request failed\n");
         ntp_result(state, -1, NULL);
     }
 }
@@ -456,7 +495,7 @@ static void ntp_recv(void *arg, struct udp_pcb *pcb, struct pbuf *p, const ip_ad
         time_t epoch = seconds_since_1970;
         ntp_result(state, 0, &epoch);
     } else {
-        printf("invalid ntp response\n");
+        printf("\ninvalid ntp response\n");
         ntp_result(state, -1, NULL);
     }
     pbuf_free(p);
@@ -468,12 +507,12 @@ static void ntp_recv(void *arg, struct udp_pcb *pcb, struct pbuf *p, const ip_ad
 static NTP_T* ntp_init(void) {
     NTP_T *state = calloc(1, sizeof(NTP_T));
     if (!state) {
-        printf("failed to allocate state\n");
+        printf("\nfailed to allocate state for ntp\n");
         return NULL;
     }
     state->ntp_pcb = udp_new_ip_type(IPADDR_TYPE_ANY);
     if (!state->ntp_pcb) {
-        printf("failed to create pcb\n");
+        printf("\nfailed to create pcb for ntp\n");
         free(state);
         return NULL;
     }
@@ -490,7 +529,7 @@ static bool net_ntp(char *ntp_server)
 
     NTP_T *state = ntp_init();
     if (!state) {
-        printf("ntp_init failed\n");
+        printf("\nntp_init failed\n");
         return rval;
     }
 
@@ -516,7 +555,7 @@ static bool net_ntp(char *ntp_server)
                 rval = true;
                 break;
             } else if (err != ERR_INPROGRESS) { // ERR_INPROGRESS means expect a callback
-                printf("dns request failed(%d)\n", i+1);
+                printf("\ndns request failed(%d)\n", i+1);
                 ntp_result(state, -1, NULL);
             }
         }
@@ -526,13 +565,16 @@ static bool net_ntp(char *ntp_server)
     return rval;
 }
 
+/**
+ * User entry point for an NTP request
+ */
 bool netNTP_connect(char *server)
 {
     bool rval = false;
     static char buf_ntp[20];
     static bool isConnected;
 
-    if (netIsConnected == true && isConnected == false) {
+    if (netIsConnected == nON && isConnected == nOFF) {
 
         if (!strncmp(server, "0.0.0.0", 7)) {
             // Default gw host assumed to hold NTP services
@@ -547,15 +589,30 @@ bool netNTP_connect(char *server)
             sleep_ms(1000);
             if (rtcIsSetDone == true ) { // Set in the ntp_result() or ntp_failed_handler() callbacks
                 rtcIsSetDone = false;
-                isConnected = rval =  true;
+                isConnected = rval =  nON;
                 break;
             }
         }
-
     }
 
     return rval;
 }
+
+/**
+ * A private implementation of time()
+ */
+time_t _time(time_t *tloc)
+{
+    return ds3231ReadTime() + TZ_RZONE;
+}
+
+#else /* NETRTC */
+time_t _time(time_t *tloc)
+{
+    return 1660411426 + get_absolute_time()/1000000;    // Fake time around Sat Aug 13 17:20 2022
+}
+
+#endif /* NETRTC */
 
 #if 0
 static void measure_freqs(void)
@@ -590,6 +647,7 @@ static void recover_from_sleep(uint scb_orig, uint clock0_orig, uint clock1_orig
 void goDormant(int dpin)
 {
     static char buffer_t[60];
+ printf("Skipping dormant for now\n"); return;
 
     time_t curtime = time(NULL);
 
@@ -635,5 +693,158 @@ void goDormant(int dpin)
     //measure_freqs();
 
 }
+
+#if LWIP_RAW // Should be onfigured for in lwipopts.h
+
+/** 
+ * Prepare a echo ICMP request
+ */
+static void ping_prepare_echo( struct icmp_echo_hdr *iecho, u16_t len)
+{
+    size_t i;
+    size_t data_len = len - sizeof(struct icmp_echo_hdr);
+
+    ICMPH_TYPE_SET(iecho, ICMP_ECHO);
+    ICMPH_CODE_SET(iecho, 0);
+    iecho->chksum = 0;
+    iecho->id     = PING_ID;
+    iecho->seqno  = lwip_htons(++ping_seq_num);
+
+    // fill the additional data buffer with some data
+    for(i = 0; i < data_len; i++) {
+        ((char*)iecho)[sizeof(struct icmp_echo_hdr) + i] = (char)i;
+    }
+
+    iecho->chksum = inet_chksum(iecho, len);
+}
+
+/**
+ * Send the ping
+ */
+static void ping_send(struct raw_pcb *raw, const ip_addr_t *addr)
+{
+    struct pbuf *p;
+    struct icmp_echo_hdr *iecho;
+    size_t ping_size = sizeof(struct icmp_echo_hdr) + PING_DATA_SIZE;
+    static int seq;
+
+    goodPing = false;
+
+    // ESC[2K\r = erase line and return cursor
+    printf("%c[2K\r(%d)ping %s with timeout %.1fs. ", 0x1b, ++seq, ip4addr_ntoa(addr), (float)PING_DELAY/1000);
+    fflush(stdout);
+
+    LWIP_ASSERT("ping_size <= 0xffff", ping_size <= 0xffff);
+
+    p = pbuf_alloc(PBUF_IP, (u16_t)ping_size, PBUF_RAM);
+    if (!p) {
+        return;
+    }
+
+    if ((p->len == p->tot_len) && (p->next == NULL)) {
+        iecho = (struct icmp_echo_hdr *)p->payload;
+
+        ping_prepare_echo(iecho, (u16_t)ping_size);
+
+        raw_sendto(raw, p, addr);
+    }
+
+    pbuf_free(p);
+}
+
+/**
+ * Ping timeout callback
+ */
+static void ping_timeout(void *arg)
+{
+    struct raw_pcb *pcb = (struct raw_pcb*)arg;
+
+    LWIP_ASSERT("ping_timeout: no pcb given!", pcb != NULL);
+    printf("Ping timeout: send again.\n");
+    ping_send(pcb, ping_target);
+}
+
+/**
+ * Ping using the raw ip
+ */
+static u8_t ping_recv(void *arg, struct raw_pcb *pcb, struct pbuf *p, const ip_addr_t *addr)
+{
+    struct icmp_echo_hdr *iecho;
+    LWIP_UNUSED_ARG(arg);
+    LWIP_UNUSED_ARG(pcb);
+    LWIP_UNUSED_ARG(addr);
+    LWIP_ASSERT("p != NULL", p != NULL);
+
+    if ((p->tot_len >= (PBUF_IP_HLEN + sizeof(struct icmp_echo_hdr))) && pbuf_remove_header(p, PBUF_IP_HLEN) == 0) {
+        iecho = (struct icmp_echo_hdr *)p->payload;
+
+        if ((iecho->id == PING_ID) && (iecho->seqno == lwip_htons(ping_seq_num))) {
+            pbuf_free(p);
+            goodPing = true;
+            sys_untimeout(ping_timeout, pcb);
+            printf("Got good ping.\r");
+            fflush(stdout);
+
+            return 1; // eat the packet
+        }
+
+        // not eaten, restore original packet
+        pbuf_add_header(p, PBUF_IP_HLEN);
+    }
+
+    goodPing = false;
+    return 0; // don't eat the packet
+}
+
+/**
+ * Set up the ping
+ */
+static void ping_raw_init(const char *ip)
+{
+    if (pRawisInit == false) {
+        ping_pcb = raw_new(IP_PROTO_ICMP);
+        LWIP_ASSERT("ping_pcb != NULL", ping_pcb != NULL);
+
+        raw_recv(ping_pcb, ping_recv, NULL);
+        raw_bind(ping_pcb, IP_ADDR_ANY);
+
+        printf("Ping target %s initialized.\n", ip);
+        pRawisInit = true;
+    }
+}
+
+/**
+ * User entry to send a (one) ping package
+ */
+void ping_send_now(void)
+{
+    if (pRawisInit == true) {
+        LWIP_ASSERT("ping_pcb != NULL", ping_pcb != NULL);
+        sys_timeout(PING_DELAY, ping_timeout, ping_pcb);
+        ping_send(ping_pcb, ping_target);
+    }
+}
+
+/**
+ * User entry for a ping init
+ */
+void ping_init(const char *ip)
+{
+    static ip_addr_t no;
+    ip4addr_aton(ip, &no);
+    ping_target = &no;
+
+    ping_raw_init(ip);
+}
+
+/**
+ * User entry to pick up the result of a ping
+ */
+bool ping_result(void)
+{
+    return goodPing;
+}
+
+#endif /* LWIP_RAW */
 
 

@@ -47,7 +47,7 @@
  * For debug purposes this app enters flash
  * mode when the reset button is pressed.
  */
-#define FLASHMODE false
+#define FLASHMODE true
 
 /**
  * Monitor the HALL sensor run state by frequency measurement.
@@ -123,10 +123,10 @@ static uint16_t FlowFreq =          0;  // Live flow frequency
 static int sessTick;
 
 /**
- * Start time used for uptime
- * feature in ssi.h
+ * startTime/inactivityTimer used in ssi.h
  */
 time_t startTime;
+time_t inactivityTimer;
 
 /**
  * Persistent data in flash
@@ -164,17 +164,17 @@ static void printHdr(const char *format , ...)
  */
 static void printLog(const char *format , ...)
 {
-    static char buf[100];
-    va_list arglist;
+    static char buf[MAX_CHAR*2];
+    static va_list arglist;
     va_start(arglist, format);
     vsprintf(buf, format, arglist);
     va_end(arglist);
 
     int curLine;
-    static char lines[MAX_LINES][MAX_CHAR+1];
+    static char lines[MAX_LINES][MAX_CHAR];
     if (FirstLogline == true) {
         for (int i=0; i <MAX_LINES; i++) {
-            memset(lines[i], 0x0, MAX_CHAR+1);
+            memset(lines[i], 0, MAX_CHAR);
         }
 
         FirstLogline = false;
@@ -434,7 +434,7 @@ void water_ctrl(void)
     float litreMinute = 0.0;
     int delSave = 0;
     bool doSave = false;
-    int inactivityTimer = INACTIVITY_TIME;
+    inactivityTimer = INACTIVITY_TIME;
     int tmo;
 
     stdio_init_all();
@@ -477,25 +477,19 @@ pdata.sensFq, ctime_r(&pdata.filterAge, buffer_t)), pdata.filterVolume ;
         printf("Using default value for FQ: %.2f\n", SENS_FQC);
     }
 
-#if NETRTC
+#if defined NETRTC && NETRTC == 1
     if (wifi_connect(pdata.ssid, pdata.pass, pdata.country) == true) {
         if (netNTP_connect(pdata.ntp_server) == false) {
             printf("\nWiFi netNTP_operation failed\n");
         }
+        init_httpd();
+        sleep_ms(1000);
+        ping_init(ip4addr_ntoa(netif_ip4_gw(netif_list)));
     }
 #endif
 
     if (waterCtrlInit() == false) {
         panic("\nwaterCtrlInit failed: %s line %d\n", __FILENAME__, __LINE__);
-    }
-
-    if (net_checkconnection() == true) {
-        printf("got I.P adress %s\n", ip4addr_ntoa(netif_ip4_addr(netif_list)));
-        printf("gateway adress %s\n", ip4addr_ntoa(netif_ip4_gw(netif_list)));
-
-        httpd_init();
-        ssi_init();
-        printf("Http server initialized.\n");
     }
 
     startTime = curtime = time(NULL);
@@ -544,30 +538,40 @@ pdata.sensFq, ctime_r(&pdata.filterAge, buffer_t)), pdata.filterVolume ;
 
         while (FlowFreq == 0.0) {
 
+#if defined NETRTC && NETRTC == 1
             static int tryConnect;
+            static int tryPing;
+            static int pingInterval;
+            static int lostPing;
 
-            sleep_ms(1000);
+            if (pingInterval++ >= 20) {
+                ping_send_now();
+                pingInterval = 0;
+            } else sleep_ms(1000);
 
-            DEV_SET_PWM(0); 
-
-            if (--inactivityTimer == 0) {
-                goDormant(dormantPin);    // Save some more energy (some ticks may be lost at resume)
-                inactivityTimer = INACTIVITY_TIME;
-                break;  // We do have flow now
+            if (ping_result() == false && tryPing++ >= 10) {
+                net_setconnection(nOFF);
+                printf("Lost ping sequence %d times. since boot\n", ++lostPing);
+                tryPing = 0;       
+            } else if (ping_result() == true) {
+                tryConnect = tryPing = 0;
+                net_setconnection(nON);
             }
 
             if (net_checkconnection() == false && tryConnect++ >= 10) {
                 tryConnect = 0;
+
                 if (wifi_connect(pdata.ssid, pdata.pass, pdata.country) == true) {
-                    printf("got I.P adress %s\n", ip4addr_ntoa(netif_ip4_addr(netif_list)));
-                    printf("gateway adress %s\n", ip4addr_ntoa(netif_ip4_gw(netif_list)));
                     (void)netNTP_connect(pdata.ntp_server);
-                    httpd_init();
-                    ssi_init();
-                    printf("Http server initialized.\n");
+                    init_httpd();
+                    tryConnect = pingInterval = tryPing = 0;
                 }
                 continue;
             }
+#else
+            sleep_ms(1000);
+#endif
+            DEV_SET_PWM(0); 
 
             if (doSave == true && delSave-- <= 0) { // Avoid repeated saves for rapid events
                 printf("Delayed save\n");
@@ -578,12 +582,6 @@ pdata.sensFq, ctime_r(&pdata.filterAge, buffer_t)), pdata.filterVolume ;
                 delSave = 0;
             }
             
-#if 0
-            DEV_SET_PWM(DEF_PWM);
-            printLog("BUTT=%d", gpio_get(JsLeft));
-            sleep_ms(2000);
-            continue;
-#else
             if (!gpio_get(JsRight)) {       // Adjust filter expiration date +
                 curtime = time(NULL);
                 clearLog(HDR_INFO);
@@ -691,18 +689,20 @@ pdata.sensFq, ctime_r(&pdata.filterAge, buffer_t)), pdata.filterVolume ;
             if (!gpio_get(ResetButt)) {         // Reset total volume and restart this app
                 clearLog(HDR_ERROR);
                 printHdr("RESET");
+
+                if (FirmwareMode == true) {
+                    printLog("Go Firmware");
+                    sleep_ms(3000);
+                    reset_usb_boot(0,0);
+                    /** NOT REACHED **/
+                }
+
                 pdata.totVolume = 0.0;
                 DEV_SET_PWM(DEF_PWM);
                 if (write_flash(&pdata) == false) {
                     printLog("SAVE-ERROR");
                 } else {
                     printLog("Reset OK");
-                }
-               
-                if (FirmwareMode == true) {
-                    printLog("Go Firmware");
-                    sleep_ms(1000);
-                    reset_usb_boot(0,0);
                 }
 
                 sleep_ms(1000);
@@ -713,8 +713,14 @@ pdata.sensFq, ctime_r(&pdata.filterAge, buffer_t)), pdata.filterVolume ;
                 /** NOT REACHED **/
 
             }
-#endif
+
+            if (--inactivityTimer == 0) {
+                goDormant(dormantPin);    // Save some more energy (some ticks may be lost at resume)
+                inactivityTimer = INACTIVITY_TIME;
+                break;  // We do have flow now
+            }
         }
+
 
         printf("Woken up!!\n");
     }

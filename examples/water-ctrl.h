@@ -4,8 +4,14 @@
 /**
  * For debugging
  */
-#define NETRTC      1       // 0 = Disable suport for network and RTC hat i.e, legacy pico mode.
+#define NETRTC      1      // 0 = Disable suport for network and RTC hat i.e, legacy pico mode.
 #define __FILENAME__ (strrchr(__FILE__, '/') ? strrchr(__FILE__, '/') + 1 : __FILE__)
+
+/**
+ * For net status
+ */
+#define nON     true
+#define nOFF    false
 
 /**
  * Version string in splash screen
@@ -40,13 +46,16 @@ typedef struct p_data {
  * Common functions used in this app
  */
 extern bool     netNTP_connect(char *server);
-extern void     net_disconnect(void);
 extern bool     wifi_connect(char *ssid, char *pass, uint32_t country);
 extern bool     net_checkconnection(void);
+extern void     net_setconnection(bool mode);
 extern void     read_flash(persistent_data *pdata);
 extern bool     write_flash(persistent_data *new_data);
 extern void     goDormant(int dpin);
 extern time_t   _time(time_t *tloc);
+extern void     ping_init(const char*);
+extern void     ping_send_now(void);
+extern bool     ping_result(void);
 
 #define PICO_CYW43_ARCH_THREADSAFE_BACKGROUND 1
 

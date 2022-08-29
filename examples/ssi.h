@@ -2,10 +2,13 @@
 #include <stdio.h>
 #include <string.h>
 #include <time.h>
+#include "water-ctrl.h"
+
+#if defined NETRTC && NETRTC == 1
+
 #include "lwipopts.h"
 #include <lwip/apps/httpd.h>
 #include <pico/cyw43_arch.h>
-#include "water-ctrl.h"
 
 // max length of the tags defaults to be 8 chars
 // LWIP_HTTPD_MAX_TAG_NAME_LEN
@@ -55,9 +58,14 @@ u16_t __time_critical_func(ssi_handler)(int iIndex, char *pcInsert, int iInsertL
 {
     extern persistent_data pdata;
     extern time_t startTime;
+    extern time_t inactivityTimer;
     static char buffer_t[60];
     size_t printed;
-    time_t curtime=time(NULL);
+    time_t curtime;
+
+    if (inactivityTimer < SHOUR/2) {  // Don't go dormant anythime soon ..
+        inactivityTimer = SHOUR/2;
+    }
 
     switch (iIndex) {
         case SSID:  /* "SSID" */
@@ -97,9 +105,11 @@ u16_t __time_critical_func(ssi_handler)(int iIndex, char *pcInsert, int iInsertL
             printed = snprintf(pcInsert, iInsertLen, "%s",  ip4addr_ntoa(netif_ip4_gw(netif_list)));
         break;
         case CURTM: /* Today */
+            curtime=time(NULL);
             printed = snprintf(pcInsert, iInsertLen, "%s", ctime_r(&curtime, buffer_t));
         break;
         case UPTM: /* Uptime */
+            curtime=time(NULL);
             printed = snprintf(pcInsert, iInsertLen, "%s", sec_today(curtime-startTime, buffer_t));
         break;
         default:    /* unknown tag */
@@ -112,9 +122,9 @@ u16_t __time_critical_func(ssi_handler)(int iIndex, char *pcInsert, int iInsertL
 }
 
 /**
- * Set the SSI handler function
+ * Set the SSI handler function and start httpd
  */
-void ssi_init()
+void init_httpd()
 {
     size_t i;
 
@@ -130,6 +140,11 @@ void ssi_init()
     *    num_tags	    number of tags in the 'tags' array
     */ 
     http_set_ssi_handler(ssi_handler, ssi_html_tags, LWIP_ARRAYSIZE(ssi_html_tags));
+
+    httpd_init();
+
+    printf("Http server initialized.\n");
+
 }
 
 static inline int ishex(int x)
@@ -345,3 +360,4 @@ void httpd_post_finished(void *connection, char *response_uri, u16_t response_ur
         valid_connection = NULL;
     }
 }
+#endif /* NETRTC */
