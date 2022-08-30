@@ -481,6 +481,10 @@ pdata.sensFq, ctime_r(&pdata.filterAge, buffer_t)), pdata.filterVolume ;
         printf("Using default value for FQ: %.2f\n", SENS_FQC);
     }
 
+    if (pdata.version != atof(VERSION)) {
+        pdata.version = atof(VERSION);
+    }
+
 #if defined NETRTC && NETRTC == 1
     if (wifi_connect(pdata.ssid, pdata.pass, pdata.country) == true) {
         if (netNTP_connect(pdata.ntp_server) == false) {
