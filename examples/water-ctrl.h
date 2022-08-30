@@ -45,17 +45,19 @@ typedef struct p_data {
 /**
  * Common functions used in this app
  */
-extern bool     netNTP_connect(char *server);
-extern bool     wifi_connect(char *ssid, char *pass, uint32_t country);
-extern bool     net_checkconnection(void);
-extern void     net_setconnection(bool mode);
+
 extern void     read_flash(persistent_data *pdata);
 extern bool     write_flash(persistent_data *new_data);
 extern void     goDormant(int dpin);
 extern time_t   _time(time_t *tloc);
-extern void     ping_init(const char*);
+
+#if defined NETRTC && NETRTC == 1
+extern bool     netNTP_connect(char *server);
+extern bool     wifi_connect(char *ssid, char *pass, uint32_t country);
+extern bool     net_checkconnection(void);
+extern void     net_setconnection(bool mode);
 extern void     ping_send_now(void);
-extern bool     ping_result(void);
+extern bool     ping_status(void);
 
 #define PICO_CYW43_ARCH_THREADSAFE_BACKGROUND 1
 
@@ -63,6 +65,12 @@ extern bool     ping_result(void);
 #define WIFI_SSID       "sy-madonna-24"
 #define WIFI_PASS       "090a0b0c0d"
 #define NTP_SERVER      "0.0.0.0"                   // 0.0.0.0 = auto i.e assume DHCP host also is NTP server
+
+/**
+ * OK chars for URLs and WiFi text properties
+ */
+#define OKCHAR   "abcdefghijklmnopqrstvwxzyABCDEFGHIJKLMNOPQRTSVWXZY0123456789-"
+#endif /* NETRTC */
 
 #define TANK_VOLUME     725.00                      // Water tank volume
 
@@ -72,11 +80,6 @@ extern bool     ping_result(void);
  * messured in actual installation environment.
  */
 #define SENS_FQC    11.00           // Pulse Characteristics: F=11.00 x Q (Rate of flow (Q) in litres/min)
-
-/**
- * OK chars for URLs and WiFi text properties
- */
-#define OKCHAR   "abcdefghijklmnopqrstvwxzyABCDEFGHIJKLMNOPQRTSVWXZY0123456789-"
 
 /**
  * Waveshare RTC properties:

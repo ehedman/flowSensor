@@ -39,9 +39,11 @@
 #include "LCD_1in14.h"
 #include "waterbcd.h"
 #include "water-ctrl.h"
+#if defined NETRTC && NETRTC == 1
 #include "ssi.h"
 #include <pico/cyw43_arch.h>
 #include <lwip/apps/httpd.h>
+#endif /* NETRTC */
 
 /**
  * For debug purposes this app enters flash
@@ -444,11 +446,13 @@ void water_ctrl(void)
     read_flash(&pdata);
 
     if (!pdata.checksum) {  // Set up defaults
-        printf("Update flash data\n");
+        printf("Set default flash data\n");
+#if defined NETRTC && NETRTC == 1
         strcpy(pdata.ssid, WIFI_SSID);
         strcpy(pdata.pass,WIFI_PASS);
         strcpy(pdata.ntp_server, NTP_SERVER);
         pdata.country = WIFI_COUNTRY;
+#endif /* NETRTC */
         pdata.tankVolume = TANK_VOLUME;
         pdata.totVolume = 0;
         pdata.filterVolume = 0;
@@ -484,7 +488,6 @@ pdata.sensFq, ctime_r(&pdata.filterAge, buffer_t)), pdata.filterVolume ;
         }
         init_httpd();
         sleep_ms(1000);
-        ping_init(ip4addr_ntoa(netif_ip4_gw(netif_list)));
     }
 #endif
 
@@ -549,11 +552,11 @@ pdata.sensFq, ctime_r(&pdata.filterAge, buffer_t)), pdata.filterVolume ;
                 pingInterval = 0;
             } else sleep_ms(1000);
 
-            if (ping_result() == false && tryPing++ >= 10) {
+            if (ping_status() == false && tryPing++ >= 10) {
                 net_setconnection(nOFF);
                 printf("Lost ping sequence %d times. since boot\n", ++lostPing);
                 tryPing = 0;       
-            } else if (ping_result() == true) {
+            } else if (ping_status() == true) {
                 tryConnect = tryPing = 0;
                 net_setconnection(nON);
             }

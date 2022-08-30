@@ -96,6 +96,7 @@ static u16_t ping_seq_num;
 static struct raw_pcb *ping_pcb;
 static bool goodPing = true;
 static bool pRawisInit;
+static void ping_init(const char*);
 
 #endif /* LWIP_RAW */
 
@@ -289,8 +290,8 @@ bool wifi_connect(char *ssid, char *pass, uint32_t country)
         }
         if (rval == 0) {
             char *gw;
-            printf("got I.P adress %s\n", ip4addr_ntoa(netif_ip4_addr(netif_list)));
-            printf("gateway adress %s\n", (gw=ip4addr_ntoa(netif_ip4_gw(netif_list))));
+            printf("Got I.P adress %s\n", ip4addr_ntoa(netif_ip4_addr(netif_list)));
+            printf("Got gateway adress %s\n", (gw=ip4addr_ntoa(netif_ip4_gw(netif_list))));
             goodPing = netIsConnected = nON;
             ping_init(gw);
             break;
@@ -418,7 +419,7 @@ static void ntp_result(NTP_T* state, int status, time_t *result) {
         struct tm *utc = gmtime(result);
         printf("Got ntp response: %02d/%02d/%04d %02d:%02d:%02d\n", utc->tm_mday, utc->tm_mon + 1, utc->tm_year + 1900,
                utc->tm_hour, utc->tm_min, utc->tm_sec);
-        printf("set RTC accordingly\n");
+        printf("Set RTC accordingly\n");
         set_rtc(utc);
         rtcIsSetDone = true;
     }
@@ -460,7 +461,6 @@ static void ntp_request(NTP_T *state) {
     pbuf_free(p);
     cyw43_arch_lwip_end();
 }
-
 
 /**
  * Call back with a DNS result
@@ -694,7 +694,20 @@ void goDormant(int dpin)
 
 }
 
-#if LWIP_RAW // Should be onfigured for in lwipopts.h
+/** 
+ * The pico w is prone to lose network connectivity from time to time (at least in my environment)
+ * and it is difficult to recover from that situation without a re-boot. The variations in
+ * this behavior is very inconsistent over a day period, and for this reason this "ping" probing
+ * will recover the connectivity silently in the background. It will also recover from 
+ * a situation where the AP is unreacable momentarely.
+ * The pinged node in this configuration is the (AP) default gateway that obviously
+ * must be receptive for ICMP accesses.
+ *
+ * The application API for this features are:
+ * void ping_send_now(void)
+ * bool ping_status(void)
+ */
+#if LWIP_RAW // Should be configured for in lwipopts.h
 
 /** 
  * Prepare a echo ICMP request
@@ -826,9 +839,9 @@ void ping_send_now(void)
 }
 
 /**
- * User entry for a ping init
+ * Entry for a ping init
  */
-void ping_init(const char *ip)
+static void ping_init(const char *ip)
 {
     static ip_addr_t no;
     ip4addr_aton(ip, &no);
@@ -840,7 +853,7 @@ void ping_init(const char *ip)
 /**
  * User entry to pick up the result of a ping
  */
-bool ping_result(void)
+bool ping_status(void)
 {
     return goodPing;
 }

@@ -7,15 +7,15 @@ Marine water flow sensor and meter
 - Waveshare 1.14" color display
 - A water flow sensor
 
-### Some existing or furutre features
-- Filter capacity life monitor in litres
-- Filter elapse time monitor up to 6 month
+### Features
+- Monitor filter elapse time
 - Monitor total flow through filter
 - Monitor volume / time
 - Near end of filter life alert
 - End of filter life alert
-- Automatic data memorised in flash.
-- WiFi connectivity, NTP, HTTPD functions etc.
+- Automatic data memorised in flash
+- WiFi connectivity, NTP and HTTPD functions
+- WiFi connectivity management
     
 ### Environment
 - Linux Mint (Debian) platform for development
