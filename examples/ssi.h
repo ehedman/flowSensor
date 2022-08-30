@@ -26,6 +26,7 @@
     TAG(IPAD)  \
     TAG(IPAGW) \
     TAG(CURTM) \
+    TAG(EPOCH) \
     TAG(UPTM)  \
 
 #define GENERATE_ENUM(ENUM) ENUM,
@@ -107,6 +108,9 @@ u16_t __time_critical_func(ssi_handler)(int iIndex, char *pcInsert, int iInsertL
         case CURTM: /* Today */
             curtime=time(NULL);
             printed = snprintf(pcInsert, iInsertLen, "%s", ctime_r(&curtime, buffer_t));
+        break;
+        case EPOCH: /* Today in epoch */
+            printed = snprintf(pcInsert, iInsertLen, "%llu", time(NULL));
         break;
         case UPTM: /* Uptime */
             curtime=time(NULL);

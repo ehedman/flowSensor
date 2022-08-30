@@ -445,7 +445,7 @@ void water_ctrl(void)
 
     read_flash(&pdata);
 
-    if (!pdata.checksum) {  // Set up defaults
+    if (pdata.idt != IDT) {  // Set up defaults
         printf("Set default flash data\n");
 #if defined NETRTC && NETRTC == 1
         strcpy(pdata.ssid, WIFI_SSID);
@@ -454,11 +454,12 @@ void water_ctrl(void)
         pdata.country = WIFI_COUNTRY;
 #endif /* NETRTC */
         pdata.tankVolume = TANK_VOLUME;
-        pdata.totVolume = 0;
-        pdata.filterVolume = 0;
+        pdata.totVolume = 0.0;
+        pdata.filterVolume = 0.0;
         pdata.filterAge = time(NULL) + SDAY;
         pdata.sensFq = SENS_FQC;
         pdata.version = atof(VERSION);
+        pdata.idt = IDT;
         write_flash(&pdata);
     }
 

@@ -25,6 +25,11 @@
 #define PASS_MAX    63
 #define URL_MAX     70
 
+/*
+ * Validation tag for the p_data struct in flash
+ */
+#define IDT         0x3FC8727B
+
 /**
  * Main control data type
  */
@@ -40,6 +45,7 @@ typedef struct p_data {
     time_t      filterAge;
     float       filterVolume;
     float       version;
+    uint32_t    idt;
 } persistent_data;
 
 /**

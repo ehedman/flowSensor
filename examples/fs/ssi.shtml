@@ -77,18 +77,29 @@
     function setFdate(how)
     {
         var obje = document.getElementById("fage");
+        var objeval = parseInt(obje.value, 10);
         var objd = document.getElementById("fdate");
+        var curepoch = parseInt(document.getElementById("curepoch").value, 10);
         var epoch;
 
         if (how == "plus")
-            epoch = parseInt(obje.value, 10) + 2628288;
-        else if (how == 'minus')
-            epoch = parseInt(obje.value, 10) - 2628288;
+            epoch = objeval + 2628288;
+        else if (how == 'minus') {
+            if (objeval > curepoch + 2628288)
+                epoch = objeval - 2628288;
+            else
+                epoch = objeval;
+            }
         else
             return;
-              
+          
         obje.value =  epoch;                
         objd.value = ToLocalDate(epoch);
+
+        if (epoch < curepoch + 2628288)
+            objd.style.background = "#f40"; 
+        else
+            objd.style.background = "#fff";
     }
 
     function showPass()
@@ -128,8 +139,12 @@
     {
         var obje = document.getElementById("fage");
         var objd = document.getElementById("fdate");
+        var curepoch = parseInt(document.getElementById("curepoch").value, 10);
 
         objd.value = ToLocalDate(obje.value);
+
+        if (parseInt(obje.value, 10) < curepoch + 2628288)
+            objd.style.background = "#f40";
 
         var couVal = document.getElementById("cou").value;
         var opt = document.getElementById("couopt");
@@ -150,6 +165,12 @@
                 break;
             }
         }
+       
+        var totv = parseInt(document.getElementById("totv").value, 10);
+        var tnkv = parseInt(document.getElementById("tnkv").value, 10);
+        var vleft = Math.round(((tnkv-totv)/tnkv)*100);
+        document.getElementById("totv").title = "volume left " + vleft + "%";  
+        document.getElementById("tnkv").title = "volume left " + vleft + "%";       
     }
 
     function finish()
@@ -180,6 +201,7 @@
 
 <form name="form" id="form" method="post" onsubmit="return finish()" action="/index.html">
 <input type="hidden" name="fage" id="fage" value="<!--#FAGE-->">
+<input type="hidden" id="curepoch" value="<!--#EPOCH-->">
 <table>
     <tr>
     <th>Property</th>
@@ -265,7 +287,7 @@
 
     <tr>
         <td><label for="fvol">Filter Volume</label></td>
-        <td><input type="number" min="1" title="In Litres" id="fvol" name="fvol" oninput="validity.valid||(value='');" value="<!--#FVOL-->"></td>
+        <td><input type="number" min="0" title="In Litres" id="fvol" name="fvol" oninput="validity.valid||(value='');" value="<!--#FVOL-->"></td>
         <td>Filter Volume since last replacement</td>
     </tr>
 
