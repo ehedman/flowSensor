@@ -37,6 +37,8 @@
 
     <script>
 
+    const amonth = 2628288;
+
     function upd_country(obj)
     {
         if (obj.options[obj.selectedIndex].text == "Select new")
@@ -83,10 +85,10 @@
         var epoch;
 
         if (how == "plus")
-            epoch = objeval + 2628288;
+            epoch = objeval + amonth;
         else if (how == 'minus') {
-            if (objeval > curepoch + 2628288)
-                epoch = objeval - 2628288;
+            if (objeval > curepoch + amonth)
+                epoch = objeval - amonth;
             else
                 epoch = objeval;
             }
@@ -96,10 +98,16 @@
         obje.value =  epoch;                
         objd.value = ToLocalDate(epoch);
 
-        if (epoch < curepoch + 2628288)
-            objd.style.background = "#f40"; 
-        else
+        if (epoch < curepoch + (amonth/2)) {
+            objd.style.background = "red";
+            objd.title = "Expired";
+        } else if (epoch < curepoch + amonth) {
+            objd.style.background = "yellow";
+            objd.title = "About to expire";
+        } else {
             objd.style.background = "#fff";
+            objd.title = "";
+        }
     }
 
     function showPass()
@@ -140,11 +148,20 @@
         var obje = document.getElementById("fage");
         var objd = document.getElementById("fdate");
         var curepoch = parseInt(document.getElementById("curepoch").value, 10);
+        var epoch = parseInt(obje.value, 10);
 
         objd.value = ToLocalDate(obje.value);
 
-        if (parseInt(obje.value, 10) < curepoch + 2628288)
-            objd.style.background = "#f40";
+        if (epoch < curepoch + (amonth/2)) {
+            objd.style.background = "red";
+            objd.title = "Expired";
+        } else if (epoch < curepoch + amonth) {
+            objd.style.background = "yellow";
+            objd.title = "About to expire";
+        } else {
+            objd.style.background = "#fff";
+            objd.title = "";
+        }
 
         var couVal = document.getElementById("cou").value;
         var opt = document.getElementById("couopt");
@@ -169,8 +186,8 @@
         var totv = parseInt(document.getElementById("totv").value, 10);
         var tnkv = parseInt(document.getElementById("tnkv").value, 10);
         var vleft = Math.round(((tnkv-totv)/tnkv)*100);
-        document.getElementById("totv").title = "volume left " + vleft + "%";  
-        document.getElementById("tnkv").title = "volume left " + vleft + "%";       
+        document.getElementById("totv").title = "Volume left " + vleft + "%";
+        document.getElementById("tnkv").title = "Volume left " + vleft + "%";
     }
 
     function finish()
@@ -254,7 +271,7 @@
                 <option value="time.apple.com">time.apple.com</option>
             </select> 
         </td>
-        <td>0.0.0.0 = Auto (Use the DHCP servers' NTP service)&sup1;</td>
+        <td>0.0.0.0 = Auto (NTP service of the AP)&sup1;</td>
     </tr>
 
     <tr>

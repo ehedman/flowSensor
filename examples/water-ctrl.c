@@ -515,8 +515,8 @@ pdata.sensFq, ctime_r(&pdata.filterAge, buffer_t)), pdata.filterVolume ;
                 clearLog(HDR_OK);
                 printHdr("Flowing");
                 printf("FlowFreq=%dHz\n", FlowFreq);
-                printLog("FLOW=%.2f L/M", litreMinute);
-                printLog("USED=%.2f L", sessLitre + pdata.totVolume);
+                printLog("FLOW=%.1f L/M", litreMinute);
+                printLog("USED=%.0f L", sessLitre + pdata.totVolume);
                 DEV_SET_PWM(DEF_PWM);
 
             } else if (tmo-- <= 0) {
@@ -524,7 +524,7 @@ pdata.sensFq, ctime_r(&pdata.filterAge, buffer_t)), pdata.filterVolume ;
                 strftime(buffer_t, sizeof(buffer_t), "%m/%d/%y", info_t);
                 clearLog(HDR_INFO);
                 printHdr("No FLow");
-                printLog("USE=%.2fL", pdata.totVolume + sessLitre);
+                printLog("USE=%.0fL", pdata.totVolume + sessLitre);
                 printLog("REM=%.0fL", pdata.tankVolume - (pdata.totVolume + sessLitre));
                 printLog("FXD=%s", buffer_t);
                 break;
@@ -649,10 +649,10 @@ pdata.sensFq, ctime_r(&pdata.filterAge, buffer_t)), pdata.filterVolume ;
             if (!gpio_get(StatusButt)) {              // Show statistics
                 clearLog(HDR_INFO);
                 printHdr("STATUS");
-                printLog("USE=%.2fL", pdata.totVolume);
+                printLog("USE=%.0fL", pdata.totVolume);
                 printLog("REM=%.0fL", pdata.tankVolume - pdata.totVolume);
                 printLog("FXD=%s", buffer_t);
-                printLog("FLV=%.2f", pdata.filterVolume);
+                printLog("FLV=%.0f", pdata.filterVolume);
                 DEV_SET_PWM(DEF_PWM);
                 sleep_ms(10000);
 
@@ -729,10 +729,9 @@ pdata.sensFq, ctime_r(&pdata.filterAge, buffer_t)), pdata.filterVolume ;
             }
         }
 
-
         printf("Woken up!!\n");
     }
 
-}
+} /*  water_ctrl() */
 
 
