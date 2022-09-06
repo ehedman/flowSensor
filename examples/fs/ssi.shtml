@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <title>DigiFLow 242</title>
+    <title><!--#HNAME--></title>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">     
     <meta name="description" content="hedmanshome.se Marine Water FlowMeter">
     <meta name="author" content="Erland Hedman">
@@ -214,7 +214,7 @@
 
 <body onload="init()">
 
-<h1>DigiFlow 242 @ <!--#IPAD-->  <!--#CURTM--></h1>
+<h1><!--#HNAME--> @ <!--#IPAD-->  <!--#CURTM--></h1>
 
 <form name="form" id="form" method="post" onsubmit="return finish()" action="/index.html">
 <input type="hidden" name="fage" id="fage" value="<!--#FAGE-->">

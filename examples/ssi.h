@@ -4,11 +4,11 @@
 #include <time.h>
 #include "water-ctrl.h"
 
-#if defined NETRTC && NETRTC == 1
+#ifdef NETRTC
 
 #include "lwipopts.h"
-#include <lwip/apps/httpd.h>
 #include <pico/cyw43_arch.h>
+#include <lwip/apps/httpd.h>
 
 // max length of the tags defaults to be 8 chars
 // LWIP_HTTPD_MAX_TAG_NAME_LEN
@@ -28,6 +28,7 @@
     TAG(CURTM) \
     TAG(EPOCH) \
     TAG(UPTM)  \
+    TAG(HNAME) \
 
 #define GENERATE_ENUM(ENUM) ENUM,
 #define GENERATE_STRING(STRING) #STRING,
@@ -58,14 +59,20 @@ static inline char* sec_today(time_t nsec, char* buf_t)
 u16_t __time_critical_func(ssi_handler)(int iIndex, char *pcInsert, int iInsertLen)
 {
     extern persistent_data pdata;
-    extern time_t startTime;
-    extern time_t inactivityTimer;
+    extern shared_data sdata;
     static char buffer_t[60];
     size_t printed;
-    time_t curtime;
+    static time_t curtime;
 
-    if (inactivityTimer < SHOUR/2) {  // Don't go dormant anythime soon ..
-        inactivityTimer = SHOUR/2;
+    if (iIndex == CURTM) { // CURTM expected to occur only one time and early in ssi.shtml
+        if (sdata.inactivityTimer < SHOUR/2) {  // Don't go dormant anythime soon ..
+            sdata.inactivityTimer = SHOUR/2;
+        }
+        curtime=time(NULL);
+#ifdef NETRTC_DEBUG
+        static int httpdReq;
+        printf("Httpd request no. %d\n", ++httpdReq);
+#endif
     }
 
     switch (iIndex) {
@@ -106,15 +113,16 @@ u16_t __time_critical_func(ssi_handler)(int iIndex, char *pcInsert, int iInsertL
             printed = snprintf(pcInsert, iInsertLen, "%s",  ip4addr_ntoa(netif_ip4_gw(netif_list)));
         break;
         case CURTM: /* Today */
-            curtime=time(NULL);
             printed = snprintf(pcInsert, iInsertLen, "%s", ctime_r(&curtime, buffer_t));
         break;
         case EPOCH: /* Today in epoch */
-            printed = snprintf(pcInsert, iInsertLen, "%llu", time(NULL));
+            printed = snprintf(pcInsert, iInsertLen, "%llu", curtime);
         break;
         case UPTM: /* Uptime */
-            curtime=time(NULL);
-            printed = snprintf(pcInsert, iInsertLen, "%s", sec_today(curtime-startTime, buffer_t));
+            printed = snprintf(pcInsert, iInsertLen, "%s", sec_today(curtime-sdata.startTime, buffer_t));
+        break;
+        case HNAME: /* Our official name */
+            printed = snprintf(pcInsert, iInsertLen, "%s", CYW43_HOST_NAME);
         break;
         default:    /* unknown tag */
         printed = 0;

@@ -1,10 +1,13 @@
 #ifndef _WATERCTRL_H_
 #define _WATERCTRL_H_
 
+#if defined _BOARDS_PICO_W_H
+#define NETRTC      // Enable support for for pico_w, network and RTC hat, else pico legacy with LCD hat for testing only
+#endif
+
 /**
  * For debugging
  */
-#define NETRTC      1      // 0 = Disable suport for network and RTC hat i.e, legacy pico mode.
 #define __FILENAME__ (strrchr(__FILE__, '/') ? strrchr(__FILE__, '/') + 1 : __FILE__)
 
 /**
@@ -26,12 +29,22 @@
 #define URL_MAX     70
 
 /*
+ * Shared data type
+ */
+typedef struct s_data {
+    time_t  startTime;
+    time_t inactivityTimer;
+    int     outOfPcb;
+    int     lostPing;
+} shared_data;
+
+/*
  * Validation tag for the p_data struct in flash
  */
 #define IDT         0x3FC8727B
 
 /**
- * Main control data type
+ * Main control data type to be saved in flash
  */
 typedef struct p_data {
     uint8_t     checksum;
@@ -45,6 +58,8 @@ typedef struct p_data {
     time_t      filterAge;
     float       filterVolume;
     float       version;
+    time_t      rebootTime;
+    int         rebootCount;
     uint32_t    idt;
 } persistent_data;
 
@@ -54,10 +69,11 @@ typedef struct p_data {
 
 extern void     read_flash(persistent_data *pdata);
 extern bool     write_flash(persistent_data *new_data);
-extern void     goDormant(int dpin);
+extern void     goDormant(int dpin, persistent_data *pdata, shared_data *sdata);
 extern time_t   _time(time_t *tloc);
 
-#if defined NETRTC && NETRTC == 1
+#ifdef NETRTC
+
 extern bool     netNTP_connect(char *server);
 extern bool     wifi_connect(char *ssid, char *pass, uint32_t country);
 extern bool     net_checkconnection(void);
@@ -66,6 +82,8 @@ extern void     ping_send_now(void);
 extern bool     ping_status(void);
 
 #define PICO_CYW43_ARCH_THREADSAFE_BACKGROUND 1
+
+#define CYW43_HOST_NAME "DigiFLow"  // Also in CMakeLists.txt
 
 #define WIFI_COUNTRY    CYW43_COUNTRY_SWEDEN
 #define WIFI_SSID       "sy-madonna-24"
@@ -76,6 +94,15 @@ extern bool     ping_status(void);
  * OK chars for URLs and WiFi text properties
  */
 #define OKCHAR   "abcdefghijklmnopqrstvwxzyABCDEFGHIJKLMNOPQRTSVWXZY0123456789-"
+
+/**
+ * For debugging: Monitor out of PCB events etc
+ */
+#define MAX_BAD_PCBS    4
+#define MAX_BAD_PINGS   20
+#define NETRTC_SANITY_CHECK     // Undef this if tcp_in-c.patch is not applied
+#define NETRTC_DEBUG
+
 #endif /* NETRTC */
 
 #define TANK_VOLUME     725.00                      // Water tank volume

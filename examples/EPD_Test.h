@@ -35,7 +35,7 @@
 #include "Debug.h"
 #include <stdlib.h> // malloc() free()
 
-#include "Infrared.h"
+//#include "Infrared.h"
 
 //int LCD_1in14_test(void);
 void water_ctrl(void);

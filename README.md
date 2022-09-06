@@ -24,7 +24,7 @@ Marine water flow sensor and meter
 ### Build
 Once integrated with the Waveshare build structure:
 - Alter the default WiFi credentials in ./examples/water-ctrl.h
-- mkdir build; cd build; cmake -DPICO_BOARD=pico_w  ..
+- mkdir build; cd build; PICO_BOARD=pico_w cmake  ..
 - make fsdata (make embedded file system to hold html index files etc.)
 - make (to produce the executable main.main.uf2)
 

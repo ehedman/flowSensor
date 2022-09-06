@@ -1,6 +1,7 @@
 #ifndef _LWIPOPTS_EXAMPLE_COMMONH_H
 #define _LWIPOPTS_EXAMPLE_COMMONH_H
 
+//#undef NDEBUG
 
 // Common settings used in most of the pico_w examples
 // (see https://www.nongnu.org/lwip/2_1_x/group__lwip__opts.html for details)
@@ -86,6 +87,9 @@
 #define PPP_DEBUG                   LWIP_DBG_OFF
 #define SLIP_DEBUG                  LWIP_DBG_OFF
 #define DHCP_DEBUG                  LWIP_DBG_OFF
+
+#define TCP_MAXRTX                  4
+#define  TCP_KEEPIDLE_DEFAULT       120000UL /* Default 7200000UL KEEPALIVE timer in milliseconds def. in lib/lwip/src/include/lwip/priv/tcp_priv.h */
 
 #define LWIP_HTTPD_SUPPORT_POST 1
 #define LWIP_HTTPD_POST_MANUAL_WND 1

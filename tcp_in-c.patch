@@ -1,0 +1,26 @@
+--- lib/lwip/src/core/tcp_in.c.orig	2022-09-06 08:57:44.567338501 +0200
++++ lib/lwip/src/core/tcp_in.c	2022-09-06 09:02:40.852363365 +0200
+@@ -85,6 +85,8 @@
+ static u8_t recv_flags;
+ static struct pbuf *recv_data;
+ 
++int outOfPcb;
++
+ struct tcp_pcb *tcp_input_pcb;
+ 
+ /* Forward declarations. */
+@@ -662,12 +664,13 @@
+        SYN at a time when we have more memory available. */
+     if (npcb == NULL) {
+       err_t err;
++      outOfPcb++;
+       LWIP_DEBUGF(TCP_DEBUG, ("tcp_listen_input: could not allocate PCB\n"));
+       TCP_STATS_INC(tcp.memerr);
+       TCP_EVENT_ACCEPT(pcb, NULL, pcb->callback_arg, ERR_MEM, err);
+       LWIP_UNUSED_ARG(err); /* err not useful here */
+       return;
+-    }
++    } else if (outOfPcb > 0) { outOfPcb--; printf("\noutOfPcb restored = %d\n", outOfPcb); }
+ #if TCP_LISTEN_BACKLOG
+     pcb->accepts_pending++;
+     tcp_set_flags(npcb, TF_BACKLOGPEND);

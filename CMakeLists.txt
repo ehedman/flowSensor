@@ -1,15 +1,13 @@
 cmake_minimum_required(VERSION 3.13)
 include(pico_sdk_import.cmake)
 include(pico_extras_import.cmake)
-project(Pico_ePaper_Code)
+project(DigiFlow)
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_CXX_STANDARD 17)
 pico_sdk_init()
 
 # Add a compilation subdirectory
 add_subdirectory(lib/Config)
-add_subdirectory(lib/Infrared)
-add_subdirectory(lib/Icm20948)
 add_subdirectory(lib/LCD)
 add_subdirectory(lib/Fonts)
 add_subdirectory(lib/GUI)
@@ -20,35 +18,42 @@ add_subdirectory(examples)
 include_directories(examples)
 include_directories(./lib/Config)
 include_directories(./lib/GUI)
-include_directories(./lib/Icm20948)
 include_directories(./lib/LCD)
-include_directories(./lib/Infrared)
-
-
-if (PICO_CYW43_SUPPORTED) # set by BOARD=pico-w
-    if (NOT TARGET pico_cyw43_arch)
-        message("Skipping Pico W support is not available")
-    else()
-        message("including Pico W support")
-    endif()
-endif()
-
-set(MAKE_FS_DATA_SCRIPT ${CMAKE_CURRENT_LIST_DIR}/external/makefsdata)
-
-add_custom_command(OUTPUT fsdata.c
-  COMMAND ${MAKE_FS_DATA_SCRIPT} fs
-  COMMAND mv fsdata.c ../fs
-  COMMAND touch lwipopts.h
-  WORKING_DIRECTORY ${CMAKE_CURRENT_LIST_DIR}/examples 
-  DEPENDS ${CMAKE_CURRENT_LIST_DIR}/examples/fs/ssi.shtml
-  VERBATIM)
-add_custom_target(fsdata
-              DEPENDS fsdata.c)
 
 # create an executable file
 add_executable(main
 main.c
 )
+
+if (PICO_CYW43_SUPPORTED) # set by command 'PICO_BOARD=pico_w cmake  ..'
+    if (NOT TARGET pico_cyw43_arch)
+        message("Skipping Pico W support is not available")
+    else()
+        message("including Pico W support")
+
+        add_compile_definitions(CYW43_HOST_NAME="DigiFLow")
+
+        set(MAKE_FS_DATA_SCRIPT ${CMAKE_CURRENT_LIST_DIR}/external/makefsdata)
+
+        add_custom_command(OUTPUT fsdata.c
+          COMMAND ${MAKE_FS_DATA_SCRIPT} fs
+          COMMAND mv fsdata.c ../fs
+          COMMAND touch lwipopts.h
+          WORKING_DIRECTORY ${CMAKE_CURRENT_LIST_DIR}/examples 
+          DEPENDS ${CMAKE_CURRENT_LIST_DIR}/examples/fs/ssi.shtml
+          VERBATIM)
+        add_custom_target(fsdata
+                      DEPENDS fsdata.c)
+        target_link_libraries(main
+            examples  GUI Fonts Config pico_stdlib
+            hardware_spi pico_multicore hardware_flash hardware_rtc hardware_adc
+            pico_cyw43_arch_lwip_threadsafe_background cyw43_driver_base pico_lwip_http)
+    endif()
+else()
+    target_link_libraries(main
+        examples LCD GUI Fonts Config pico_stdlib
+        hardware_spi pico_multicore hardware_flash hardware_rtc hardware_adc)
+endif()
 
 # enable usb output, disable uart output
 pico_enable_stdio_usb(main 1)
@@ -56,8 +61,6 @@ pico_enable_stdio_uart(main 1)
 
 # create map/bin/hex/uf2 file etc.
 pico_add_extra_outputs(main)
-
-target_link_libraries(main pico_cyw43_arch_lwip_threadsafe_background examples LCD Infrared Icm20948 GUI Fonts Config pico_stdlib hardware_spi pico_multicore hardware_flash hardware_sleep hardware_rtc cyw43_driver_base pico_lwip_http hardware_adc)
 
 target_include_directories(examples 
 PRIVATE ${PICO_SDK_PATH}/src/host/pico_multicore/include

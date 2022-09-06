@@ -39,10 +39,8 @@
 #include "LCD_1in14.h"
 #include "waterbcd.h"
 #include "water-ctrl.h"
-#if defined NETRTC && NETRTC == 1
+#ifdef NETRTC
 #include "ssi.h"
-#include <pico/cyw43_arch.h>
-#include <lwip/apps/httpd.h>
 #endif /* NETRTC */
 
 /**
@@ -125,15 +123,14 @@ static uint16_t FlowFreq =          0;  // Live flow frequency
 static int sessTick;
 
 /**
- * startTime/inactivityTimer used in ssi.h
- */
-time_t startTime;
-time_t inactivityTimer;
-
-/**
  * Persistent data in flash
  */
 persistent_data pdata;
+
+/**
+ * Shared data for this app
+ */
+shared_data sdata;
 
 /**
  * Format the text header.
@@ -436,7 +433,7 @@ void water_ctrl(void)
     float litreMinute = 0.0;
     int delSave = 0;
     bool doSave = false;
-    inactivityTimer = INACTIVITY_TIME;
+    sdata.inactivityTimer = INACTIVITY_TIME;
     int tmo;
 
     stdio_init_all();
@@ -447,7 +444,7 @@ void water_ctrl(void)
 
     if (pdata.idt != IDT) {  // Set up defaults
         printf("Set default flash data\n");
-#if defined NETRTC && NETRTC == 1
+#ifdef NETRTC
         strcpy(pdata.ssid, WIFI_SSID);
         strcpy(pdata.pass,WIFI_PASS);
         strcpy(pdata.ntp_server, NTP_SERVER);
@@ -459,6 +456,8 @@ void water_ctrl(void)
         pdata.filterAge = time(NULL) + SDAY;
         pdata.sensFq = SENS_FQC;
         pdata.version = atof(VERSION);
+        pdata.rebootCount = 0;
+        pdata.rebootTime = time(NULL);
         pdata.idt = IDT;
         write_flash(&pdata);
     }
@@ -486,7 +485,9 @@ pdata.sensFq, ctime_r(&pdata.filterAge, buffer_t)), pdata.filterVolume ;
         pdata.version = atof(VERSION);
     }
 
-#if defined NETRTC && NETRTC == 1
+    sdata.outOfPcb = sdata.lostPing = 0;
+
+#ifdef NETRTC
     if (wifi_connect(pdata.ssid, pdata.pass, pdata.country) == true) {
         if (netNTP_connect(pdata.ntp_server) == false) {
             printf("\nWiFi netNTP_operation failed\n");
@@ -500,11 +501,11 @@ pdata.sensFq, ctime_r(&pdata.filterAge, buffer_t)), pdata.filterVolume ;
         panic("\nwaterCtrlInit failed: %s line %d\n", __FILENAME__, __LINE__);
     }
 
-    startTime = curtime = time(NULL);
+    sdata.startTime = curtime = time(NULL);
     printf("Current RTC time is %s", ctime_r(&curtime, buffer_t));
 
     tmo = 3;
-   
+
     while (1) {
 
         while(1) {
@@ -546,11 +547,10 @@ pdata.sensFq, ctime_r(&pdata.filterAge, buffer_t)), pdata.filterVolume ;
 
         while (FlowFreq == 0.0) {
 
-#if defined NETRTC && NETRTC == 1
+#ifdef NETRTC
             static int tryConnect;
             static int tryPing;
             static int pingInterval;
-            static int lostPing;
 
             if (pingInterval++ >= 20) {
                 ping_send_now();
@@ -559,18 +559,32 @@ pdata.sensFq, ctime_r(&pdata.filterAge, buffer_t)), pdata.filterVolume ;
 
             if (ping_status() == false && tryPing++ >= 10) {
                 net_setconnection(nOFF);
-                printf("Lost ping sequence %d times. since boot\n", ++lostPing);
+                printf("\nLost ping sequences %d times\n", ++sdata.lostPing);
                 tryPing = 0;       
             } else if (ping_status() == true) {
-                tryConnect = tryPing = 0;
+                sdata.lostPing = tryConnect = tryPing = 0;
                 net_setconnection(nON);
             }
+
+#ifdef NETRTC_SANITY_CHECK  // Undef this if tcp_in-c.patch is not applied
+            extern int outOfPcb;
+
+            if (outOfPcb > 0 && outOfPcb != sdata.outOfPcb ) {
+                printf("\noutOfPcb = %d\n", outOfPcb);
+                sdata.outOfPcb = outOfPcb;
+            }
+
+            if (sdata.outOfPcb > MAX_BAD_PCBS) {
+                sdata.inactivityTimer = 1;  //  Time to attempt a reboot
+            }
+#endif
 
             if (net_checkconnection() == false && tryConnect++ >= 10) {
                 tryConnect = 0;
 
                 if (wifi_connect(pdata.ssid, pdata.pass, pdata.country) == true) {
                     (void)netNTP_connect(pdata.ntp_server);
+                    sleep_ms(2000);
                     init_httpd();
                     tryConnect = pingInterval = tryPing = 0;
                 }
@@ -646,8 +660,11 @@ pdata.sensFq, ctime_r(&pdata.filterAge, buffer_t)), pdata.filterVolume ;
                 continue;
             }
  
-            if (!gpio_get(StatusButt)) {              // Show statistics
+            if (!gpio_get(StatusButt)) {
                 clearLog(HDR_INFO);
+#if defined NETRTC && defined NETRTC_DEBUG  // Show statistics to console
+                printf("Lost ping sequences=%d, out of pcbs=%d, reboots=%d\n", sdata.lostPing, sdata.outOfPcb, pdata.rebootCount);
+#endif
                 printHdr("STATUS");
                 printLog("USE=%.0fL", pdata.totVolume);
                 printLog("REM=%.0fL", pdata.tankVolume - pdata.totVolume);
@@ -722,9 +739,9 @@ pdata.sensFq, ctime_r(&pdata.filterAge, buffer_t)), pdata.filterVolume ;
 
             }
 
-            if (--inactivityTimer == 0) {
-                goDormant(dormantPin);    // Save some more energy (some ticks may be lost at resume)
-                inactivityTimer = INACTIVITY_TIME;
+            if (--sdata.inactivityTimer == 0) {
+                goDormant(dormantPin, &pdata, &sdata);    // Save some more energy (some ticks may be lost at resume)
+                sdata.inactivityTimer = INACTIVITY_TIME;
                 break;  // We do have flow now
             }
         }

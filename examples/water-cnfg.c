@@ -42,11 +42,12 @@
 #include <pico/util/datetime.h>
 #include <hardware/clocks.h>
 #include <hardware/rosc.h>
+#include <hardware/watchdog.h>
 #include <hardware/structs/scb.h>
 #include "water-ctrl.h"
-#include <lwip/opt.h>
-#if defined NETRTC && NETRTC == 1
+#ifdef NETRTC
 #include <pico/cyw43_arch.h>
+#include <lwip/opt.h>
 #include <lwip/dns.h>
 #include <lwip/pbuf.h>
 #include <lwip/udp.h>
@@ -54,7 +55,7 @@
 #include <lwip/ip_addr.h>
 #endif
 
-#if defined NETRTC && NETRTC == 0
+#ifndef NETRTC
 #undef LWIP_RAW
 #endif
 
@@ -100,7 +101,7 @@ static void ping_init(const char*);
 
 #endif /* LWIP_RAW */
 
-#if defined NETRTC && NETRTC == 1
+#ifdef NETRTC
 
 #define NTP_MSG_LEN 48
 #define NTP_PORT 123
@@ -127,7 +128,7 @@ static bool netIsConnected = nOFF;
  * We're going to erase and reprogram a region 512k from the start of flash.
  * Once done, we can access this at XIP_BASE + 512k.
 */
-#define FLASH_TARGET_OFFSET (512 * 1024)    // 512 for W
+#define FLASH_TARGET_OFFSET (640 * 1024)    // 512 for W
 
 static const uint8_t *flash_target_contents = (const uint8_t *) (XIP_BASE + FLASH_TARGET_OFFSET);
 
@@ -204,7 +205,7 @@ bool write_flash(persistent_data *new_data)
     return rval;   
 }
 
-#if defined NETRTC && NETRTC == 1
+#ifdef NETRTC
 /**
  * Return logical connection status
  */
@@ -290,10 +291,11 @@ bool wifi_connect(char *ssid, char *pass, uint32_t country)
         }
         if (rval == 0) {
             char *gw;
-            printf("Got I.P adress %s\n", ip4addr_ntoa(netif_ip4_addr(netif_list)));
+            printf("Got I.P adress %s for %s\n", ip4addr_ntoa(netif_ip4_addr(netif_list)), CYW43_HOST_NAME);
             printf("Got gateway adress %s\n", (gw=ip4addr_ntoa(netif_ip4_gw(netif_list))));
             goodPing = netIsConnected = nON;
             ping_init(gw);
+
             break;
         }
     }
@@ -644,12 +646,38 @@ static void recover_from_sleep(uint scb_orig, uint clock0_orig, uint clock1_orig
     stdio_init_all();
 }
 
-void goDormant(int dpin)
+void goDormant(int dpin, persistent_data *pdata, shared_data *sdata)
 {
     static char buffer_t[60];
- printf("Skipping dormant for now\n"); return;
-
     time_t curtime = time(NULL);
+
+#if defined NETRTC && defined NETRTC_SANITY_CHECK
+/** 
+ * The lwip stack is prone to run out of listening PCBs from time to time (at least in my environment)
+ * and it is difficult to recover from that situation without a re-boot. The variations in
+ * this behavior is very inconsistent over a day period, and for this reason this sanity check will
+ * attempt a reboot of the pico_w.
+ */
+    if (sdata->outOfPcb > MAX_BAD_PCBS || sdata->lostPing > MAX_BAD_PINGS) {
+
+        if (pdata->rebootTime + SHOUR/4 < curtime) {   // Avoid quick boot loops
+            pdata->rebootTime = curtime;
+            pdata->rebootCount++;
+            if (write_flash(pdata) == false) {
+                printf("Failed to save reboot data\n");
+            } else {
+                printf("\nSystem reboot due to internal unstable network properties\n");
+                watchdog_enable(1, 1);  // Reboot
+                while(1);
+                /** NOT REACHED **/
+            }
+        }
+    }
+#endif
+
+    printf("Skipping dormant for now\n"); return;   // Until tested firmly
+
+
 
     printf("Enter dormant mode at %s", ctime_r(&curtime, buffer_t));
     /*
@@ -774,6 +802,7 @@ static void ping_timeout(void *arg)
 
     LWIP_ASSERT("ping_timeout: no pcb given!", pcb != NULL);
     printf("Ping timeout: send again.\n");
+    sleep_ms(500);
     ping_send(pcb, ping_target);
 }
 
