@@ -384,7 +384,7 @@ static bool waterCtrlInit(void)
 
     // Splash screen
     Paint_DrawImage(water_crane_map,0,0,LCD_HEIGHT,LCD_WIDTH);
-    Paint_DrawString_EN(2, 118, VERSION , &Font16, WHITE, BLACK);
+    Paint_DrawString_EN(2, 118, sdata.versionString , &Font16, WHITE, BLACK);
     Paint_DrawString_EN(60, 118, qstr , &Font16, WHITE, BLACK);
     LCD_1IN14_Display(BlackImage);
     Paint_Clear(WHITE);
@@ -441,6 +441,11 @@ void water_ctrl(void)
 
     stdio_init_all();
 
+    memset(&sdata, 0, sizeof(shared_data));
+    sdata.versioMajor =  DigiFlow_VERSION_MAJOR;
+    sdata.versionMinor = DigiFlow_VERSION_MINOR;
+    sprintf(sdata.versionString, "%d.%d", sdata.versioMajor, sdata.versionMinor);
+
     memset(&pdata, 0, sizeof(persistent_data));
 
     read_flash(&pdata);
@@ -458,7 +463,7 @@ void water_ctrl(void)
         pdata.filterVolume = 0.0;
         pdata.filterAge = time(NULL) + SDAY;
         pdata.sensFq = SENS_FQC;
-        pdata.version = atof(VERSION);
+        pdata.version = atof(sdata.versionString);
         pdata.rebootCount = 0;
         pdata.rebootTime = time(NULL);
         pdata.idt = IDT;
@@ -476,11 +481,9 @@ void water_ctrl(void)
         printf("Using default value for FQ: %.2f\n", SENS_FQC);
     }
 
-    if (pdata.version != atof(VERSION)) {
-        pdata.version = atof(VERSION);
+    if (pdata.version != atof(sdata.versionString)) {
+        pdata.version = atof(sdata.versionString);
     }
-
-    sdata.outOfPcb = sdata.lostPing = 0;
 
 #ifdef NETRTC
     if (wifi_connect(pdata.ssid, pdata.pass, pdata.country) == true) {

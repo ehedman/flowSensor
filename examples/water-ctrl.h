@@ -1,6 +1,12 @@
 #ifndef _WATERCTRL_H_
 #define _WATERCTRL_H_
 
+#if __has_include("DigiFlow.h")
+ #include "DigiFlow.h"
+#else
+ #error Run cmake to create DigiFlow.h
+#endif
+
 /**
  * Check if we are building for Pico w, i.e, build invoked as 'PICO_BOARD=pico_w cmake  ..'
  */
@@ -20,11 +26,6 @@
 #define nOFF    false
 
 /**
- * Version string in splash screen
- */
-#define VERSION "1.0"
-
-/**
  * String lenght limits
  */
 #define SSID_MAX    40
@@ -39,6 +40,9 @@ typedef struct s_data {
     time_t inactivityTimer;
     int     outOfPcb;
     int     lostPing;
+    int     versioMajor;
+    int     versionMinor;
+    char    versionString[20];
 } shared_data;
 
 /**
