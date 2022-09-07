@@ -244,16 +244,61 @@
     <tr>
         <td><label for="cou">Country Code</label></td>
         <td>
-            <input type="text" readonly id="cou" name="cou" value="<!--#COU-->">
+            <input type="text" readonly id="cou" name="cou" title="cyw43_country.h" value="<!--#COU-->">
             <select name="couopt" id="couopt" title="CountryCode" style="width: 140px;" onchange="upd_country(this)">
                 <option selected value="0">Select new</option>
-                <option value="21333">USA</option>
+                <option value="22616">WORLDWIDE</option>
+                <option value="21825">AUSTRALIA</option>
+                <option value="21569">AUSTRIA</option>
+                <option value="17730">BELGIUM</option>
+                <option value="21058">BRAZIL</option>
+                <option value="16707">CANADA</option>
+                <option value="19523">CHILE</option>
+                <option value="20035">CHINA</option>
+                <option value="20291">COLOMBIA</option>
+                <option value="23107">CZECH REPUBLIC</option>
+                <option value="19268">DENMARK</option>
+                <option value="17733">ESTONIA</option>
+                <option value="18758">FINLAND</option>
+                <option value="21062">FRANCE</option>
+                <option value="17732">GERMANY</option>
+                <option value="21063">GREECE</option>
+                <option value="19272">HONG KONG</option>
+                <option value="21832">HUNGARY</option>
+                <option value="21321">ICELAND</option>
+                <option value="20041">INDIA</option>
+                <option value="19529">ISRAEL</option>
+                <option value="21577">ITALY</option>
+                <option value="20554">JAPAN</option>
+                <option value="17739">KENYA</option>
+                <option value="22092">LATVIA</option>
+                <option value="18764">LIECHTENSTEIN</option>
+                <option value="21580">LITHUANIA</option>
+                <option value="21836">LUXEMBOURG</option>
+                <option value="22861">MALAYSIA</option>
+                <option value="21581">MALTA</option>
+                <option value="22605">MEXICO</option>
+                <option value="19534">NETHERLANDS</option>
+                <option value="23118">NEW ZEALAND</option>
+                <option value="18254">NIGERIA</option>
+                <option value="20302">NORWAY</option>
+                <option value="17744">PERU</option>
+                <option value="18512">PHILIPPINES</option>
+                <option value="19536">POLAND</option>
+                <option value="21584">PORTUGAL</option>
+                <option value="18259">SINGAPORE</option>
+                <option value="19283">SLOVAKIA</option>
+                <option value="18771">SLOVENIA</option>
+                <option value="16730">SOUTH AFRICA</option>
+                <option value="21067">SOUTH KOREA</option>
+                <option value="21317">SPAIN</option>
+                <option value="17747">SWEDEN</option>
+                <option value="18499">SWITZERLAND</option>
+                <option value="22356">TAIWAN</option>
+                <option value="18516">THAILAND</option>
+                <option value="21076">TURKEY</option>
                 <option value="16967">UK</option>
-                <option value="17747">Sweden</option>
-                <option value="20302">Norway</option>
-                <option value="19268">Denmark</option>
-                <option value="18758">Finland</option>
-                <!--More? See Pico SDK lib/cyw43-driver/src/cyw43_country.h -->
+                <option value="21333">USA</option>
             </select> 
         </td>
         <td>WiFi Country code&sup1;</td>
