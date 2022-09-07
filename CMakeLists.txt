@@ -25,13 +25,17 @@ add_executable(main
 main.c
 )
 
+# Set the network hostname for this Pico w
+set(HOSTNAME DigiFlow)
+
 if (PICO_CYW43_SUPPORTED) # set by command 'PICO_BOARD=pico_w cmake  ..'
     if (NOT TARGET pico_cyw43_arch)
         message("Skipping Pico W support is not available")
     else()
         message("including Pico W support")
 
-        add_compile_definitions(CYW43_HOST_NAME="DigiFLow")
+        add_compile_definitions(CYW43_HOST_NAME="${HOSTNAME}")
+        target_compile_definitions(examples PRIVATE CYW43_HOST_NAME="${HOSTNAME}")
 
         set(MAKE_FS_DATA_SCRIPT ${CMAKE_CURRENT_LIST_DIR}/external/makefsdata)
 

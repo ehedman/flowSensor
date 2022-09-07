@@ -1,8 +1,11 @@
 #ifndef _WATERCTRL_H_
 #define _WATERCTRL_H_
 
+/**
+ * Check if we are building for Pico w, i.e, build invoked as 'PICO_BOARD=pico_w cmake  ..'
+ */
 #if defined _BOARDS_PICO_W_H
-#define NETRTC      // Enable support for for pico_w, network and RTC hat, else pico legacy with LCD hat for testing only
+#define NETRTC      // Enable support for for pico_w, network and RTC hat, else pico legacy with LCD hat for testing only.
 #endif
 
 /**
@@ -19,7 +22,7 @@
 /**
  * Version string in splash screen
  */
-#define VERSION "1.1"
+#define VERSION "1.0"
 
 /**
  * String lenght limits
@@ -28,7 +31,7 @@
 #define PASS_MAX    63
 #define URL_MAX     70
 
-/*
+/**
  * Shared data type
  */
 typedef struct s_data {
@@ -38,7 +41,7 @@ typedef struct s_data {
     int     lostPing;
 } shared_data;
 
-/*
+/**
  * Validation tag for the p_data struct in flash
  */
 #define IDT         0x3FC8727B
@@ -66,7 +69,6 @@ typedef struct p_data {
 /**
  * Common functions used in this app
  */
-
 extern void     read_flash(persistent_data *pdata);
 extern bool     write_flash(persistent_data *new_data);
 extern void     goDormant(int dpin, persistent_data *pdata, shared_data *sdata);
@@ -82,8 +84,6 @@ extern void     ping_send_now(void);
 extern bool     ping_status(void);
 
 #define PICO_CYW43_ARCH_THREADSAFE_BACKGROUND 1
-
-#define CYW43_HOST_NAME "DigiFLow"  // Also in CMakeLists.txt
 
 #define WIFI_COUNTRY    CYW43_COUNTRY_SWEDEN
 #define WIFI_SSID       "sy-madonna-24"

@@ -125,10 +125,10 @@ static bool netIsConnected = nOFF;
 #endif /* NETRTC */
 
 /**
- * We're going to erase and reprogram a region 512k from the start of flash.
- * Once done, we can access this at XIP_BASE + 512k.
+ * We're going to erase and reprogram a region 640k from the start of flash.
+ * Once done, we can access this at XIP_BASE + 640k.
 */
-#define FLASH_TARGET_OFFSET (640 * 1024)    // 512 for W
+#define FLASH_TARGET_OFFSET (640 * 1024)    // Eventually move up as the application growes.
 
 static const uint8_t *flash_target_contents = (const uint8_t *) (XIP_BASE + FLASH_TARGET_OFFSET);
 
@@ -188,9 +188,10 @@ bool write_flash(persistent_data *new_data)
         flash_data[i] = ndata[i];
     }
 
-    // Note that a whole number of sectors must be erased at a time.
-    //printf("\nErasing target region and re-porgram the flash ...\n");
-
+    /**
+     * Note that a whole number of sectors must be erased at a time.
+     * printf("\nErasing target region and re-porgram the flash ...\n");
+     */
     flash_range_erase(FLASH_TARGET_OFFSET, FLASH_SECTOR_SIZE);
 
     flash_range_program(FLASH_TARGET_OFFSET, flash_data, FLASH_PAGE_SIZE);
@@ -262,9 +263,11 @@ bool wifi_connect(char *ssid, char *pass, uint32_t country)
 
         cyw43_arch_enable_sta_mode();
 
-        // this seems to be the best be can do using the predefined `cyw43_pm_value` macro:
-        // cyw43_wifi_pm(&cyw43_state, CYW43_PERFORMANCE_PM);
-        // however it doesn't use the `CYW43_NO_POWERSAVE_MODE` value, so we do this instead:
+        /**
+        * this seems to be the best be can do using the predefined `cyw43_pm_value` macro:
+        * cyw43_wifi_pm(&cyw43_state, CYW43_PERFORMANCE_PM);
+        * however it doesn't use the `CYW43_NO_POWERSAVE_MODE` value, so we do this instead:
+        */
         cyw43_wifi_pm(&cyw43_state, cyw43_pm_value(CYW43_NO_POWERSAVE_MODE, 20, 1, 1, 1));
 
         partInit = true;
@@ -294,7 +297,7 @@ bool wifi_connect(char *ssid, char *pass, uint32_t country)
             printf("Got I.P adress %s for %s\n", ip4addr_ntoa(netif_ip4_addr(netif_list)), CYW43_HOST_NAME);
             printf("Got gateway adress %s\n", (gw=ip4addr_ntoa(netif_ip4_gw(netif_list))));
             goodPing = netIsConnected = nON;
-            ping_init(gw);
+            ping_init(gw);  // Initialize the periodic ping function.
 
             break;
         }
@@ -448,12 +451,14 @@ static int64_t ntp_failed_handler(alarm_id_t id, void *user_data)
 
 /**
  * Make an NTP request
-*/
+ */
 static void ntp_request(NTP_T *state) {
-    // cyw43_arch_lwip_begin/end should be used around calls into lwIP to ensure correct locking.
-    // You can omit them if you are in a callback from lwIP. Note that when using pico_cyw_arch_poll
-    // these calls are a no-op and can be omitted, but it is a good practice to use them in
-    // case you switch the cyw43_arch type later.
+    /**
+     * cyw43_arch_lwip_begin/end should be used around calls into lwIP to ensure correct locking.
+     * You can omit them if you are in a callback from lwIP. Note that when using pico_cyw_arch_poll
+     * these calls are a no-op and can be omitted, but it is a good practice to use them in
+     * case you switch the cyw43_arch type later.
+     */
     cyw43_arch_lwip_begin();
     struct pbuf *p = pbuf_alloc(PBUF_TRANSPORT, NTP_MSG_LEN, PBUF_RAM);
     uint8_t *req = (uint8_t *) p->payload;
@@ -466,7 +471,7 @@ static void ntp_request(NTP_T *state) {
 
 /**
  * Call back with a DNS result
-*/
+ */
 static void ntp_dns_found(const char *hostname, const ip_addr_t *ipaddr, void *arg) {
     NTP_T *state = (NTP_T*)arg;
     if (ipaddr) {
@@ -543,10 +548,12 @@ static bool net_ntp(char *ntp_server)
             // Set alarm in case udp requests are lost
             state->ntp_resend_alarm = add_alarm_in_ms(NTP_RESEND_TIME, ntp_failed_handler, state, true);
 
-            // cyw43_arch_lwip_begin/end should be used around calls into lwIP to ensure correct locking.
-            // You can omit them if you are in a callback from lwIP. Note that when using pico_cyw_arch_poll
-            // these calls are a no-op and can be omitted, but it is a good practice to use them in
-            // case you switch the cyw43_arch type later.
+            /**
+             * cyw43_arch_lwip_begin/end should be used around calls into lwIP to ensure correct locking.
+             * You can omit them if you are in a callback from lwIP. Note that when using pico_cyw_arch_poll
+             * these calls are a no-op and can be omitted, but it is a good practice to use them in
+             * case you switch the cyw43_arch type later.
+             */
             cyw43_arch_lwip_begin();
             int err = dns_gethostbyname(ntp_server, &state->ntp_server_address, ntp_dns_found, state);
             cyw43_arch_lwip_end();
@@ -630,6 +637,9 @@ static void measure_freqs(void)
 }
 #endif
 
+/**
+ * Restore clocks after a dormant sleep.
+ */
 static void recover_from_sleep(uint scb_orig, uint clock0_orig, uint clock1_orig)
 {
 
@@ -646,18 +656,21 @@ static void recover_from_sleep(uint scb_orig, uint clock0_orig, uint clock1_orig
     stdio_init_all();
 }
 
+/**
+ * Go dormant after a lwip status check.
+ */
 void goDormant(int dpin, persistent_data *pdata, shared_data *sdata)
 {
     static char buffer_t[60];
     time_t curtime = time(NULL);
 
 #if defined NETRTC && defined NETRTC_SANITY_CHECK
-/** 
- * The lwip stack is prone to run out of listening PCBs from time to time (at least in my environment)
- * and it is difficult to recover from that situation without a re-boot. The variations in
- * this behavior is very inconsistent over a day period, and for this reason this sanity check will
- * attempt a reboot of the pico_w.
- */
+    /** 
+     * The lwip stack is prone to run out of listening PCBs from time to time (at least in my environment)
+     * and it is difficult to recover from that situation without a re-boot. The variations in
+     * this behavior is very inconsistent over a day period, and for this reason this sanity check will
+     * attempt a reboot of the pico_w.
+     */
     if (sdata->outOfPcb > MAX_BAD_PCBS || sdata->lostPing > MAX_BAD_PINGS) {
 
         if (pdata->rebootTime + SHOUR/4 < curtime) {   // Avoid quick boot loops
@@ -676,8 +689,6 @@ void goDormant(int dpin, persistent_data *pdata, shared_data *sdata)
 #endif
 
     printf("Skipping dormant for now\n"); return;   // Until tested firmly
-
-
 
     printf("Enter dormant mode at %s", ctime_r(&curtime, buffer_t));
     /*

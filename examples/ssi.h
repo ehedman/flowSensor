@@ -10,8 +10,10 @@
 #include <pico/cyw43_arch.h>
 #include <lwip/apps/httpd.h>
 
-// max length of the tags defaults to be 8 chars
-// LWIP_HTTPD_MAX_TAG_NAME_LEN
+/**
+ * Max length of the tags defaults to be 8 chars: LWIP_HTTPD_MAX_TAG_NAME_LEN
+ * Let the CPP take care of the enumeration and its strings.
+ */
 #define FOREACH_TAG(TAG) \
     TAG(SSID)  \
     TAG(PASS)  \
@@ -41,6 +43,9 @@ const char * __not_in_flash("httpd") ssi_html_tags[] = {
     FOREACH_TAG(GENERATE_STRING)
 };
 
+/**
+ * Helper for the uptime tag.
+ */
 static inline char* sec_today(time_t nsec, char* buf_t)
 {
     int day = nsec / (24 * 3600);
@@ -56,6 +61,9 @@ static inline char* sec_today(time_t nsec, char* buf_t)
     return buf_t;
 }
 
+/**
+ * The httpd callback is called for each evaluated tag in the ssi.shtml file.
+ */
 u16_t __time_critical_func(ssi_handler)(int iIndex, char *pcInsert, int iInsertLen)
 {
     extern persistent_data pdata;
@@ -76,55 +84,55 @@ u16_t __time_critical_func(ssi_handler)(int iIndex, char *pcInsert, int iInsertL
     }
 
     switch (iIndex) {
-        case SSID:  /* "SSID" */
+        case SSID:  // SSID
             printed = snprintf(pcInsert, iInsertLen, "%s", pdata.ssid);
         break;
-        case PASS:  /* "PASS" */
+        case PASS:  // PASS
             printed = snprintf(pcInsert, iInsertLen, "%s", pdata.pass);
         break;
-        case NTP:   /* NTP */
+        case NTP:   // NTP
             printed = snprintf(pcInsert, iInsertLen, "%s", pdata.ntp_server);
         break;
-        case COU:   /* Country code */
+        case COU:   // Country code
             printed = snprintf(pcInsert, iInsertLen, "%d", pdata.country);
         break;
-        case TOTV:  /* Total volume */
+        case TOTV:  // Total consumed volume
             printed = snprintf(pcInsert, iInsertLen, "%.0f", pdata.totVolume);
         break;
-        case TNKV:  /* Tank volume */
+        case TNKV:  // Tank volume
             printed = snprintf(pcInsert, iInsertLen, "%.0f", pdata.tankVolume);
         break;
-        case FQV:   /* Q/F value */
+        case FQV:   // Q/F value
             printed = snprintf(pcInsert, iInsertLen, "%.1f", pdata.sensFq);
         break;
-        case FAGE: /* Filter age */
+        case FAGE:  // Filter age
             printed = snprintf(pcInsert, iInsertLen, "%llu", pdata.filterAge);
         break;
-        case FVOL: /* Filter volume */
+        case FVOL:  // Filter volume
             printed = snprintf(pcInsert, iInsertLen, "%.0f", pdata.filterVolume);
         break;
-        case VERS: /* Program version */
+        case VERS:  // Program version
             printed = snprintf(pcInsert, iInsertLen, "%.1f", pdata.version);
         break;
-        case IPAD:  /* I.P address */
+        case IPAD:  // I.P address
             printed = snprintf(pcInsert, iInsertLen, "%s", ip4addr_ntoa(netif_ip4_addr(netif_list)));
         break;
-        case IPAGW: /* I.P address  GW*/
+        case IPAGW: // I.P address default gateway
             printed = snprintf(pcInsert, iInsertLen, "%s",  ip4addr_ntoa(netif_ip4_gw(netif_list)));
         break;
-        case CURTM: /* Today */
+        case CURTM: // Today
             printed = snprintf(pcInsert, iInsertLen, "%s", ctime_r(&curtime, buffer_t));
         break;
-        case EPOCH: /* Today in epoch */
+        case EPOCH: // Today in epoch
             printed = snprintf(pcInsert, iInsertLen, "%llu", curtime);
         break;
-        case UPTM: /* Uptime */
+        case UPTM:  // Uptime
             printed = snprintf(pcInsert, iInsertLen, "%s", sec_today(curtime-sdata.startTime, buffer_t));
         break;
-        case HNAME: /* Our official name */
+        case HNAME: // Our official name
             printed = snprintf(pcInsert, iInsertLen, "%s", CYW43_HOST_NAME);
         break;
-        default:    /* unknown tag */
+        default:    // unknown tag
         printed = 0;
         break;
     }
@@ -159,6 +167,9 @@ void init_httpd()
 
 }
 
+/**
+ * Helper for decode().
+ */
 static inline int ishex(int x)
 {
 	return	(x >= '0' && x <= '9')	||
@@ -236,7 +247,7 @@ err_t httpd_post_begin (
         if (current_connection != connection) {
           current_connection = connection;
           valid_connection = NULL;
-          /* default page is "index" */
+          // default page is "index"
           snprintf(response_uri, response_uri_len, "/index.html");
           *post_auto_wnd = 1;
           return ERR_OK;
@@ -244,7 +255,6 @@ err_t httpd_post_begin (
     }
     return ERR_VAL;
 }
-
 
 /**
  * Called for each pbuf of data that has been received for a POST. 
@@ -256,7 +266,6 @@ err_t httpd_post_begin (
  * Returns:
  *  ERR_OK: Data accepted. another err_t: Data denied, http_post_get_response_uri will be called. 
  */
-
 err_t httpd_post_receive_data(void *connection, struct pbuf *p)
 {
     extern persistent_data pdata;
@@ -294,13 +303,13 @@ err_t httpd_post_receive_data(void *connection, struct pbuf *p)
             }
 
             if ((len_token > 0) && (len_token < USER_PASS_BUFSIZE)) {
-                /* provide contiguous storage if p is a chained pbuf */
+                // provide contiguous storage if p is a chained pbuf
                 char buf_token[USER_PASS_BUFSIZE];
                 char *param = (char *)pbuf_get_contiguous(p, buf_token, sizeof(buf_token), len_token, value_token);
                 if (param) {
                     char dec[USER_PASS_BUFSIZE];
                     param[len_token] = 0;
-                    decode(param, dec); /* URL decode string */
+                    decode(param, dec); // URL decode string
                     //printf("(%d)param=%s\n", indx, dec);
 
                     switch (indx) {
@@ -326,14 +335,6 @@ err_t httpd_post_receive_data(void *connection, struct pbuf *p)
         if (pdata.totVolume > pdata.tankVolume) {
             pdata.totVolume = pdata.tankVolume;
         }
-
-#if 0
-char buffer_t[60];
-printf("\n\n  ssid  = %s\n  pass = %s\n  country = %d\n  ntp server = %s\n  \
-totVolume = %.2f\n  tankVolume = %.2f\n  FQ = %.2f\n  filterAge to = %s  filterVolume = %.0f\n\n",
-pdata.ssid, pdata.pass, pdata.country, pdata.ntp_server, pdata.totVolume, pdata.tankVolume,
-pdata.sensFq, ctime_r(&pdata.filterAge, buffer_t)), pdata.filterVolume ;
-#endif
 
         write_flash(&pdata);
 

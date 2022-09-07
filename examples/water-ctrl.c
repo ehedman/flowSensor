@@ -215,6 +215,9 @@ static void printLog(const char *format , ...)
 
 }
 
+/**
+ * Reset the log
+ */
 static void clearLog(int hdrColor)
 {
     HdrTxtColor = hdrColor;
@@ -462,14 +465,6 @@ void water_ctrl(void)
         write_flash(&pdata);
     }
 
-#if 0
-char buffer_t[60];
-printf("\n\n  ssid  = %s\n  pass = %s\n  country = %d\n  ntp server = %s\n  \
-totVolume = %.2f\n  tankVolume = %.2f\n  FQ = %.2f\n  filterAge to = %s  filterVolume = %.0f\n\n",
-pdata.ssid, pdata.pass, pdata.country, pdata.ntp_server, pdata.totVolume, pdata.tankVolume,
-pdata.sensFq, ctime_r(&pdata.filterAge, buffer_t)), pdata.filterVolume ;
-#endif
-
     volTick = (1.0/60)/pdata.sensFq;
 
     if (pdata.filterAge <= 0) {
@@ -662,12 +657,15 @@ pdata.sensFq, ctime_r(&pdata.filterAge, buffer_t)), pdata.filterVolume ;
  
             if (!gpio_get(StatusButt)) {
                 clearLog(HDR_INFO);
-#if defined NETRTC && defined NETRTC_DEBUG  // Show statistics to console
-                printf("Lost ping sequences=%d, out of pcbs=%d, reboots=%d\n", sdata.lostPing, sdata.outOfPcb, pdata.rebootCount);
+#if defined NETRTC && defined NETRTC_DEBUG  // Show statistics to console only
+                printf("\nLost ping sequences=%d, out of pcbs=%d, lifetime lwip exhausting reboots=%d\n", sdata.lostPing, sdata.outOfPcb, pdata.rebootCount);
+                printf("Last lwip exhausting reboot time: %s", ctime_r(&pdata.rebootTime, buffer_t));
 #endif
                 printHdr("STATUS");
                 printLog("USE=%.0fL", pdata.totVolume);
                 printLog("REM=%.0fL", pdata.tankVolume - pdata.totVolume);
+                info_t = localtime(&pdata.filterAge);
+                strftime(buffer_t, sizeof(buffer_t), "%m/%d/%y", info_t);
                 printLog("FXD=%s", buffer_t);
                 printLog("FLV=%.0f", pdata.filterVolume);
                 DEV_SET_PWM(DEF_PWM);
