@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.13)
 include(pico_sdk_import.cmake)
 include(pico_extras_import.cmake)
-project(DigiFlow)
+project(DigiFlow VERSION 1.0)
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_CXX_STANDARD 17)
 pico_sdk_init()
@@ -19,6 +19,11 @@ include_directories(examples)
 include_directories(./lib/Config)
 include_directories(./lib/GUI)
 include_directories(./lib/LCD)
+
+configure_file(DigiFlow.h.in DigiFlow.h)
+
+# Where the pico in BOOTSEL mode automounts on a (Mint) host
+set(UF2DESTINATION /media/$ENV{LOGNAME}/RPI-RP2)
 
 # create an executable file
 add_executable(main
@@ -78,7 +83,10 @@ PRIVATE ${PICO_SDK_PATH}/src/rp2_common/hardware_sync/include
 PRIVATE ${PICO_EXTRAS_PATH}/src/rp2_common/pico_sleep/include
 PRIVATE ${PICO_EXTRAS_PATH}/src/rp2_common/hardware_rosc/include
 PRIVATE ${PICO_SDK_PATH}/lib/lwip/src/apps
+PRIVATE ${PROJECT_BINARY_DIR}
 PRIVATE ${CMAKE_CURRENT_LIST_DIR}
 )
+
+install(FILES "${PROJECT_BINARY_DIR}/main.uf2" DESTINATION ${UF2DESTINATION})
 
 
