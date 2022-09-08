@@ -31,6 +31,7 @@
     TAG(EPOCH) \
     TAG(UPTM)  \
     TAG(HNAME) \
+    TAG(WSCAN) \
 
 #define GENERATE_ENUM(ENUM) ENUM,
 #define GENERATE_STRING(STRING) #STRING,
@@ -69,6 +70,7 @@ u16_t __time_critical_func(ssi_handler)(int iIndex, char *pcInsert, int iInsertL
     extern persistent_data pdata;
     extern shared_data sdata;
     static char buffer_t[60];
+    static char wscans[sizeof(sdata.wfd)+SSID_LIST+2];
     size_t printed;
     static time_t curtime;
 
@@ -77,6 +79,15 @@ u16_t __time_critical_func(ssi_handler)(int iIndex, char *pcInsert, int iInsertL
             sdata.inactivityTimer = SHOUR/2;
         }
         curtime=time(NULL);
+        memset(wscans,0, sizeof(wscans));
+        for (int i=0; i < sdata.ssidCount; i++) {
+            strncat(wscans, sdata.wfd[i].ssid, SSID_MAX);
+            strcat(wscans, ",");
+            strncat(wscans, sdata.wfd[i].rssi, RSSI_MAX);
+            if (i < sdata.ssidCount-1) {
+                strcat(wscans, ",");
+            }
+        }
 #ifdef NETRTC_DEBUG
         static int httpdReq;
         printf("Httpd request no. %d\n", ++httpdReq);
@@ -131,6 +142,9 @@ u16_t __time_critical_func(ssi_handler)(int iIndex, char *pcInsert, int iInsertL
         break;
         case HNAME: // Our official name
             printed = snprintf(pcInsert, iInsertLen, "%s", CYW43_HOST_NAME);
+        break;
+        case WSCAN: // Scanned WiFi hosts
+            printed = snprintf(pcInsert, iInsertLen, "%s", wscans);
         break;
         default:    // unknown tag
         printed = 0;

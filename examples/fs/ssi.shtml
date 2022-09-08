@@ -47,6 +47,14 @@
         document.getElementById("cou").value = obj.options[obj.selectedIndex].value;
     }
 
+    function wifi_sel(obj)
+    {
+        if (obj.options[obj.selectedIndex].text == "Select ssid")
+            return;
+
+        document.getElementById("ssid").value = obj.options[obj.selectedIndex].value;
+    }
+
     function upd_ntp(obj)
     {
         if (obj.options[obj.selectedIndex].text == "Select new")
@@ -163,6 +171,19 @@
             objd.title = "";
         }
 
+        var ssidArr = document.getElementById("wifiscans").value.split(',');
+        var wfs = document.getElementById("wifisel");
+        var wfs_option;
+        for (var i = 0; i < ssidArr.length; i+=2) {
+            wfs_option = document.createElement("option");
+            wfs_option.text = wfs_option.value = ssidArr[i];
+            wfs_option.title = ssidArr[i+1];
+            wfs.add(wfs_option);
+            if (ssidArr[i] === "<!--#SSID-->") {
+                wfs_option.selected = 'selected';
+            }
+        }
+
         var couVal = document.getElementById("cou").value;
         var opt = document.getElementById("couopt");
 
@@ -219,6 +240,7 @@
 <form name="form" id="form" method="post" onsubmit="return finish()" action="/index.html">
 <input type="hidden" name="fage" id="fage" value="<!--#FAGE-->">
 <input type="hidden" id="curepoch" value="<!--#EPOCH-->">
+<input type="hidden" id="wifiscans" value="<!--#WSCAN-->">
 <table>
     <tr>
     <th>Property</th>
@@ -228,7 +250,12 @@
 
     <tr>  
         <td><label for="ssid">SSID</label></td>
-        <td><input type="text" id="ssid" name="ssid" value="<!--#SSID-->"></td>
+        <td>
+            <input type="text" id="ssid" name="ssid" value="<!--#SSID-->">
+            <select id="wifisel" title="scanned hosts" style="width: 140px;" onchange="wifi_sel(this)">
+                <option selected value="0">Select ssid</option>
+            </select>
+        </td>
         <td>WiFi Network Name&sup1;</td>
     </tr>
 

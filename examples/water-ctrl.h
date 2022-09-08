@@ -29,12 +29,19 @@
  * String lenght limits
  */
 #define SSID_MAX    40
+#define RSSI_MAX    10
+#define SSID_LIST   10
 #define PASS_MAX    63
 #define URL_MAX     70
 
 /**
- * Shared data type
+ * Shared data types
  */
+typedef struct wifi_data {
+    char    ssid[SSID_MAX];
+    char    rssi[RSSI_MAX];
+} w_data;
+
 typedef struct s_data {
     time_t  startTime;
     time_t inactivityTimer;
@@ -42,7 +49,9 @@ typedef struct s_data {
     int     lostPing;
     int     versioMajor;
     int     versionMinor;
+    int     ssidCount;
     char    versionString[20];
+    w_data  wfd[SSID_LIST];
 } shared_data;
 
 /**
@@ -86,6 +95,8 @@ extern bool     net_checkconnection(void);
 extern void     net_setconnection(bool mode);
 extern void     ping_send_now(void);
 extern bool     ping_status(void);
+extern void     wifi_scan(int scanTurns);
+extern bool     wifi_find(char *ap);
 
 #define PICO_CYW43_ARCH_THREADSAFE_BACKGROUND 1
 

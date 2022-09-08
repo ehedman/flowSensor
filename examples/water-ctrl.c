@@ -549,6 +549,8 @@ void water_ctrl(void)
             static int tryConnect;
             static int tryPing;
             static int pingInterval;
+            static int tryScan;
+            static int lostPing;
 
             if (pingInterval++ >= 20) {
                 ping_send_now();
@@ -560,6 +562,7 @@ void water_ctrl(void)
                 printf("\nLost ping sequences %d times\n", ++sdata.lostPing);
                 tryPing = 0;       
             } else if (ping_status() == true) {
+                lostPing += sdata.lostPing;
                 sdata.lostPing = tryConnect = tryPing = 0;
                 net_setconnection(nON);
             }
@@ -577,14 +580,21 @@ void water_ctrl(void)
             }
 #endif
 
-            if (net_checkconnection() == false && tryConnect++ >= 10) {
+            if (tryScan++ > 24) {
+                memset(sdata.wfd, 0, sizeof(sdata.wfd));
+                sdata.ssidCount = 0;
+                wifi_scan(2);   // Fill wfd with fresh findings
+                tryScan = 0;
+            }
+
+            if (tryConnect++ >= 10 && net_checkconnection() == false && wifi_find(pdata.ssid) == true) {
                 tryConnect = 0;
 
                 if (wifi_connect(pdata.ssid, pdata.pass, pdata.country) == true) {
                     (void)netNTP_connect(pdata.ntp_server);
                     sleep_ms(2000);
                     init_httpd();
-                    tryConnect = pingInterval = tryPing = 0;
+                    tryScan = pingInterval = tryPing = 0;
                 }
                 continue;
             }
@@ -661,7 +671,7 @@ void water_ctrl(void)
             if (!gpio_get(StatusButt)) {
                 clearLog(HDR_INFO);
 #if defined NETRTC && defined NETRTC_DEBUG  // Show statistics to console only
-                printf("\nLost ping sequences=%d, out of pcbs=%d, lifetime lwip exhausting reboots=%d\n", sdata.lostPing, sdata.outOfPcb, pdata.rebootCount);
+                printf("\nLost ping sequences=%d, out of pcbs=%d, lifetime lwip exhausting reboots=%d\n", lostPing, sdata.outOfPcb, pdata.rebootCount);
                 printf("Last lwip exhausting reboot time: %s", ctime_r(&pdata.rebootTime, buffer_t));
 #endif
                 printHdr("STATUS");
