@@ -26,7 +26,9 @@ Once integrated with the Waveshare build structure:
 - Alter the default WiFi credentials in ./examples/water-ctrl.h
 - mkdir build; cd build; PICO_BOARD=pico_w cmake  ..
 - make fsdata (make embedded file system to hold html index files etc.)
-- make (to produce the executable main.main.uf2)
+- make (to produce the executable main.uf2)
+- make install will install the main.uf2 into /media/<your logname>RPI-RP2 assuming here that this folder is automounted when the Pico is set to "BOOTSEL" mode.
+- The hostname of this Pico W is set to DigiFlow, so it should be possible to surf in to the device referenced that name (+plus your domain name).
 
 ### External dependencies
 - ARM Cross delevopment tools for the Pico (apt install gcc-arm-none-eabi)
