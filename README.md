@@ -27,7 +27,7 @@ Once integrated with the Waveshare build structure:
 - mkdir build; cd build; PICO_BOARD=pico_w cmake  ..
 - make fsdata (make embedded file system to hold html index files etc.)
 - make (to produce the executable main.uf2)
-- make install will install the main.uf2 into /media/<your logname>RPI-RP2 assuming here that this folder is automounted when the Pico is set to "BOOTSEL" mode.
+- make install will install the main.uf2 into /media/(your logname)/RPI-RP2 assuming here that this folder is automounted when the Pico is set to "BOOTSEL" mode.
 - The hostname of this Pico W is set to DigiFlow, so it should be possible to surf in to the device referenced that name (+plus your domain name).
 
 ### External dependencies
