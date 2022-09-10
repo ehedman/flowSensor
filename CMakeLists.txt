@@ -54,14 +54,14 @@ if (PICO_CYW43_SUPPORTED) # set by command 'PICO_BOARD=pico_w cmake  ..'
         add_custom_target(fsdata
                       DEPENDS fsdata.c)
         target_link_libraries(main
-            examples  GUI Fonts Config pico_stdlib
-            hardware_spi pico_multicore hardware_flash hardware_rtc hardware_adc
+            examples GUI Fonts Config pico_stdlib hardware_spi pico_multicore hardware_flash 
+            hardware_rtc hardware_clocks hardware_rosc hardware_sleep hardware_adc
             pico_cyw43_arch_lwip_threadsafe_background cyw43_driver_base pico_lwip_http)
     endif()
 else()
     target_link_libraries(main
-        examples LCD GUI Fonts Config pico_stdlib
-        hardware_spi pico_multicore hardware_flash hardware_rtc hardware_adc)
+        examples LCD GUI Fonts Config pico_stdlib hardware_spi pico_multicore hardware_flash
+        hardware_rtc hardware_clocks hardware_rosc hardware_sleep hardware_adc)
 endif()
 
 # enable usb output, disable uart output
