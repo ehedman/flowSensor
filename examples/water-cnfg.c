@@ -264,10 +264,10 @@ bool wifi_connect(char *ssid, char *pass, uint32_t country)
         cyw43_arch_enable_sta_mode();
 
         /**
-        * this seems to be the best be can do using the predefined `cyw43_pm_value` macro:
-        * cyw43_wifi_pm(&cyw43_state, CYW43_PERFORMANCE_PM);
-        * however it doesn't use the `CYW43_NO_POWERSAVE_MODE` value, so we do this instead:
-        */
+         * this seems to be the best be can do using the predefined `cyw43_pm_value` macro:
+         * cyw43_wifi_pm(&cyw43_state, CYW43_PERFORMANCE_PM);
+         * however it doesn't use the `CYW43_NO_POWERSAVE_MODE` value, so we do this instead:
+         */
         cyw43_wifi_pm(&cyw43_state, cyw43_pm_value(CYW43_NO_POWERSAVE_MODE, 20, 1, 1, 1));
 
         partInit = true;
@@ -419,7 +419,8 @@ static void set_rtc(struct tm *utc)
 /**
  * Called with results of the NTP operation
  */
-static void ntp_result(NTP_T* state, int status, time_t *result) {
+static void ntp_result(NTP_T* state, int status, time_t *result)
+{
     if (status == 0 && result) {
         struct tm *utc = gmtime(result);
         printf("Got ntp response: %02d/%02d/%04d %02d:%02d:%02d\n", utc->tm_mday, utc->tm_mon + 1, utc->tm_year + 1900,
@@ -452,7 +453,8 @@ static int64_t ntp_failed_handler(alarm_id_t id, void *user_data)
 /**
  * Make an NTP request
  */
-static void ntp_request(NTP_T *state) {
+static void ntp_request(NTP_T *state)
+{
     /**
      * cyw43_arch_lwip_begin/end should be used around calls into lwIP to ensure correct locking.
      * You can omit them if you are in a callback from lwIP. Note that when using pico_cyw_arch_poll
@@ -472,7 +474,8 @@ static void ntp_request(NTP_T *state) {
 /**
  * Call back with a DNS result
  */
-static void ntp_dns_found(const char *hostname, const ip_addr_t *ipaddr, void *arg) {
+static void ntp_dns_found(const char *hostname, const ip_addr_t *ipaddr, void *arg)
+{
     NTP_T *state = (NTP_T*)arg;
     if (ipaddr) {
         state->ntp_server_address = *ipaddr;
@@ -487,7 +490,8 @@ static void ntp_dns_found(const char *hostname, const ip_addr_t *ipaddr, void *a
 /**
  * NTP data received
  */
-static void ntp_recv(void *arg, struct udp_pcb *pcb, struct pbuf *p, const ip_addr_t *addr, u16_t port) {
+static void ntp_recv(void *arg, struct udp_pcb *pcb, struct pbuf *p, const ip_addr_t *addr, u16_t port)
+{
     NTP_T *state = (NTP_T*)arg;
     uint8_t mode = pbuf_get_at(p, 0) & 0x7;
     uint8_t stratum = pbuf_get_at(p, 1);
@@ -511,7 +515,8 @@ static void ntp_recv(void *arg, struct udp_pcb *pcb, struct pbuf *p, const ip_ad
 /**
  * Perform initialisation
  */
-static NTP_T* ntp_init(void) {
+static NTP_T* ntp_init(void)
+{
     NTP_T *state = calloc(1, sizeof(NTP_T));
     if (!state) {
         printf("\nfailed to allocate state for ntp\n");
@@ -613,7 +618,6 @@ bool netNTP_connect(char *server)
  */
 static int scan_result(void *env, const cyw43_ev_scan_result_t *result)
 {
-
     int indx;
     extern shared_data sdata; 
 
@@ -646,7 +650,6 @@ static int scan_result(void *env, const cyw43_ev_scan_result_t *result)
  */
 void wifi_scan(int scanTurns)
 {
-
     absolute_time_t scan_test = nil_time;
     bool scan_in_progress = false;
 
@@ -742,7 +745,7 @@ static void recover_from_sleep(uint scb_orig, uint clock0_orig, uint clock1_orig
 /**
  * Go dormant after a lwip status check.
  */
-void goDormant(int dpin, persistent_data *pdata, shared_data *sdata)
+void goDormant(uint8_t dpin, persistent_data *pdata, shared_data *sdata)
 {
     static char buffer_t[60];
     time_t curtime = time(NULL);
@@ -771,7 +774,7 @@ void goDormant(int dpin, persistent_data *pdata, shared_data *sdata)
     }
 #endif
 
-    printf("Skipping dormant for now\n"); return;   // Until tested firmly
+    printf("Skipping dormant for now\n"); return;   // Until tested firmly - also it only works in "pico" mode not "pico_w"
 
     printf("Enter dormant mode at %s", ctime_r(&curtime, buffer_t));
     /*

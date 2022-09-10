@@ -95,7 +95,7 @@ static bool FirmwareMode    = FLASHMODE;
  */
 static const uint8_t JsDown =       18;
 static const uint8_t JsUp =         2;
-static const uint8_t JsRight =      20; // Currently in conflict with the RTCs I2C_SCL
+static const uint8_t JsRight =      28; //Pin 20 currently in conflict with the RTCs I2C_SCL, so it is hardware rerouted to 28.
 static const uint8_t JsLeft =       16;
 static const uint8_t JsOk =         3;
 
@@ -109,7 +109,7 @@ static const uint8_t ResetButt =    17;
  * Use this GPIO pin to wake us up from dormant.
  * Could be connected directly to the HzmeasurePin
  */
-static const uint8_t dormantPin =   4;
+static const uint8_t dWakeUpPin =   4;
 
 /**
  * FLow sesnsing
@@ -288,10 +288,6 @@ static void gpioInit(void)
         gpio_set_dir(ResetButt, GPIO_IN);
         gpio_pull_up(ResetButt);
 
-        gpio_init(dormantPin);
-        gpio_set_dir(dormantPin, GPIO_IN);
-        gpio_pull_down(dormantPin);
-
 }
 
 /**
@@ -387,7 +383,6 @@ static bool waterCtrlInit(void)
     Paint_DrawString_EN(2, 118, sdata.versionString , &Font16, WHITE, BLACK);
     Paint_DrawString_EN(60, 118, qstr , &Font16, WHITE, BLACK);
     LCD_1IN14_Display(BlackImage);
-    Paint_Clear(WHITE);
 
     multicore_launch_core1(core1Thread);
 
@@ -436,7 +431,6 @@ void water_ctrl(void)
     float litreMinute = 0.0;
     int delSave = 0;
     bool doSave = false;
-    sdata.inactivityTimer = INACTIVITY_TIME;
     int tmo;
 
     stdio_init_all();
@@ -444,6 +438,7 @@ void water_ctrl(void)
     memset(&sdata, 0, sizeof(shared_data));
     sdata.versioMajor =  DigiFlow_VERSION_MAJOR;
     sdata.versionMinor = DigiFlow_VERSION_MINOR;
+    sdata.inactivityTimer = INACTIVITY_TIME;
     sprintf(sdata.versionString, "%d.%d", sdata.versioMajor, sdata.versionMinor);
 
     memset(&pdata, 0, sizeof(persistent_data));
@@ -470,6 +465,10 @@ void water_ctrl(void)
         write_flash(&pdata);
     }
 
+    if (waterCtrlInit() == false) {
+        panic("\nwaterCtrlInit failed: %s line %d\n", __FILENAME__, __LINE__);
+    }
+
     volTick = (1.0/60)/pdata.sensFq;
 
     if (pdata.filterAge <= 0) {
@@ -494,10 +493,6 @@ void water_ctrl(void)
         sleep_ms(1000);
     }
 #endif
-
-    if (waterCtrlInit() == false) {
-        panic("\nwaterCtrlInit failed: %s line %d\n", __FILENAME__, __LINE__);
-    }
 
     sdata.startTime = curtime = time(NULL);
     printf("Current RTC time is %s", ctime_r(&curtime, buffer_t));
@@ -629,6 +624,7 @@ void water_ctrl(void)
                 sleep_ms(1000);
                 delSave = 10;
                 doSave = true;
+                sdata.inactivityTimer = INACTIVITY_TIME;
                 continue;
             }
 
@@ -648,6 +644,7 @@ void water_ctrl(void)
                 sleep_ms(1000);
                 delSave = 10;
                 doSave = true;
+                sdata.inactivityTimer = INACTIVITY_TIME;
                 continue;
             }
 
@@ -665,6 +662,7 @@ void water_ctrl(void)
                 sleep_ms(2000);
                 delSave = 1;
                 doSave = true;
+                sdata.inactivityTimer = INACTIVITY_TIME;
                 continue;
             }
  
@@ -695,6 +693,7 @@ void water_ctrl(void)
                     printLog("FLTR near FXD");
                     sleep_ms(5000);
                 }
+                sdata.inactivityTimer = INACTIVITY_TIME;
                 continue;
             }
 
@@ -707,6 +706,7 @@ void water_ctrl(void)
                 printLog("New FQ = %.2f", pdata.sensFq);
                 DEV_SET_PWM(DEF_PWM);
                 sleep_ms(2000);
+                sdata.inactivityTimer = INACTIVITY_TIME;
                 continue;
             }
 
@@ -719,12 +719,14 @@ void water_ctrl(void)
                 printLog("New FQ = %.2f", pdata.sensFq);
                 DEV_SET_PWM(DEF_PWM);
                 sleep_ms(2000);
+                sdata.inactivityTimer = INACTIVITY_TIME;
                 continue;
             }
 
             if (!gpio_get(ResetButt)) {         // Reset total volume and restart this app
                 clearLog(HDR_ERROR);
                 printHdr("RESET");
+                DEV_SET_PWM(DEF_PWM);
 
                 if (FirmwareMode == true) {
                     printLog("Go Firmware");
@@ -734,24 +736,17 @@ void water_ctrl(void)
                 }
 
                 pdata.totVolume = 0.0;
-                DEV_SET_PWM(DEF_PWM);
                 if (write_flash(&pdata) == false) {
                     printLog("SAVE-ERROR");
                 } else {
-                    printLog("Reset OK");
+                    printLog("USED = 0");
                 }
 
-                sleep_ms(1000);
-
-                // System reset
-                watchdog_enable(1, 1);
-                while(1);
-                /** NOT REACHED **/
-
+                sleep_ms(3000);
             }
 
             if (--sdata.inactivityTimer == 0) {
-                goDormant(dormantPin, &pdata, &sdata);    // Save some more energy (some ticks may be lost at resume)
+                goDormant(dWakeUpPin, &pdata, &sdata);    // Save some more energy (some ticks may be lost at resume)
                 sdata.inactivityTimer = INACTIVITY_TIME;
                 break;  // We do have flow now
             }

@@ -84,7 +84,7 @@ typedef struct p_data {
  */
 extern void     read_flash(persistent_data *pdata);
 extern bool     write_flash(persistent_data *new_data);
-extern void     goDormant(int dpin, persistent_data *pdata, shared_data *sdata);
+extern void     goDormant(uint8_t dpin, persistent_data *pdata, shared_data *sdata);
 extern time_t   _time(time_t *tloc);
 
 #ifdef NETRTC
