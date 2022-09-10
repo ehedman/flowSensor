@@ -151,6 +151,18 @@
         return /^[!#;].|[+\[\]/"\t\s].*$/.test(str);
     }
 
+    function update_vols()
+    {
+        var totv = parseInt(document.getElementById("totv").value, 10);
+        var tnkv = parseInt(document.getElementById("tnkv").value, 10);
+        if (totv >= tnkv) document.getElementById("totv").value = totv = tnkv;
+        var vleft = Math.round(((tnkv-totv)/tnkv)*100);
+        document.getElementById("totv").title = "Volume left " + vleft + "%";
+        document.getElementById("tnkv").title = "Volume left " + vleft + "%";
+        document.getElementById("remv").title = "Volume left " + vleft + "%";
+        document.getElementById("remv").value = tnkv - totv; 
+    }
+
     function init()
     {
         var obje = document.getElementById("fage");
@@ -203,12 +215,9 @@
                 break;
             }
         }
+
+        update_vols();
        
-        var totv = parseInt(document.getElementById("totv").value, 10);
-        var tnkv = parseInt(document.getElementById("tnkv").value, 10);
-        var vleft = Math.round(((tnkv-totv)/tnkv)*100);
-        document.getElementById("totv").title = "Volume left " + vleft + "%";
-        document.getElementById("tnkv").title = "Volume left " + vleft + "%";
     }
 
     function finish()
@@ -347,15 +356,21 @@
     </tr>
 
     <tr>
-        <td><label for="totv">Total Volume</label></td>
-        <td><input type="number"  min="1" title="In Litres" id="totv" name="totv" oninput="validity.valid||(value='');" value="<!--#TOTV-->"></td>
-        <td>Volume currently used</td>
+        <td><label for="remv">Remaining Volume</label></td>
+        <td><input type="text"  readonly title="In Litres" id="remv" value="0"></td>
+        <td>Volume left to consume</td>
+    </tr>
+
+    <tr>
+        <td><label for="totv">Total Volume used</label></td>
+        <td><input type="number"  min="1" title="In Litres" id="totv" name="totv" oninput="validity.valid||(value='');" onchange="update_vols()" value="<!--#TOTV-->"></td>
+        <td>Volume consumed</td>
     </tr>
 
     <tr>
         <td><label for="tnkv">Tank Volume</label></td>
-        <td><input type="number" min="1" title="In Litres" id="tnkv" name="tnkv" oninput="validity.valid||(value='');" value="<!--#TNKV-->"></td>
-        <td>Water Tank volume</td>
+        <td><input type="number" min="1" title="In Litres" id="tnkv" name="tnkv" oninput="validity.valid||(value='');" onchange="update_vols()" value="<!--#TNKV-->"></td>
+        <td>Water Tank capacity</td>
     </tr>
 
     <tr>
