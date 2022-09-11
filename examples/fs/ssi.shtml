@@ -128,18 +128,29 @@
         }
     }
 
+    const isValidUrl = urlString=> {
+        try { 
+            return Boolean(new URL(urlString)); 
+        }
+        catch(e){ 
+            return false; 
+        }
+    }
+
     function isValidIP(ip)
     {
-        var ipaddress = ip.value;
+        var address = ip.value;
         var patt = /^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/;
-        var match = ipaddress.match(patt);
+        var match = address.match(patt);
 
-        if (ipaddress == "255.255.255.255") {
+        if (address == "255.255.255.255") {
             return false;
         }
 
         if (match == null) {
-            return false;
+            if (! /^[a-zA-Z0-9_.~-]+$/.test(address)) { // valid URL?
+                return false;
+            }
         }
            
         return true;
@@ -226,7 +237,7 @@
         var ssidObj = document.getElementById("ssid");
 
         if (isValidIP(ntpObj) == false) {
-            alert("Error: Garbled NTP Server I.P Adress");
+            alert("Error: Garbled NTP Server Adress");
             return false;
         }
 
@@ -260,7 +271,7 @@
     <tr>  
         <td><label for="ssid">SSID</label></td>
         <td>
-            <input type="text" id="ssid" name="ssid" value="<!--#SSID-->">
+            <input type="text" id="ssid" maxlength="32" name="ssid" value="<!--#SSID-->">
             <select id="wifisel" title="scanned hosts" style="width: 140px;" onchange="wifi_sel(this)">
                 <option selected value="0">Select ssid</option>
             </select>
@@ -271,7 +282,7 @@
     <tr>
         <td><label for="pass">PASS</label></td>
         <td>
-            <input type="password" id="pass" name="pass" value="<!--#PASS-->">
+            <input type="password" id="pass" name="pass" maxlength="64" value="<!--#PASS-->">
             <input type="checkbox" onclick="showPass()">Show Password
         </td>
         <td>WiFi Password&sup1;</td>
@@ -343,7 +354,7 @@
     <tr>
         <td><label for="ntp">NTP Server</label></td>
         <td>
-            <input type="text" id="ntp" name="ntp" value="<!--#NTP-->">
+            <input type="text" id="ntp" name="ntp" maxlength="70" title="Enter I.P or URL" value="<!--#NTP-->">
             <select name="ntpopt" id="ntpopt" title="ntpopt" style="width: 140px;" onchange="upd_ntp(this)">
                 <option selected value="0">Select new</option>
                 <option value="0.0.0.0">Auto</option>

@@ -28,7 +28,7 @@
 /**
  * String lenght limits
  */
-#define SSID_MAX    40
+#define SSID_MAX    32
 #define RSSI_MAX    10
 #define SSID_LIST   10
 #define PASS_MAX    63
@@ -38,7 +38,7 @@
  * Shared data types
  */
 typedef struct wifi_data {
-    char    ssid[SSID_MAX];
+    char    ssid[SSID_MAX+2];
     char    rssi[RSSI_MAX];
 } w_data;
 

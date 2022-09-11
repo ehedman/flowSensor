@@ -446,7 +446,6 @@ static int64_t ntp_failed_handler(alarm_id_t id, void *user_data)
     NTP_T* state = (NTP_T*)user_data;
     printf("\nntp request failed\n");
     ntp_result(state, -1, NULL);
-    rtcIsSetDone = true;
     return 0;
 }
 
@@ -479,10 +478,10 @@ static void ntp_dns_found(const char *hostname, const ip_addr_t *ipaddr, void *a
     NTP_T *state = (NTP_T*)arg;
     if (ipaddr) {
         state->ntp_server_address = *ipaddr;
-        printf("\nntp address %s\n", ip4addr_ntoa(ipaddr));
+        printf("Got ntp address: %s for host %s\n", ip4addr_ntoa(ipaddr), hostname);
         ntp_request(state);
     } else {
-        printf("\nntp dns request failed\n");
+        printf("ntp dns request failed for: %s\n", hostname);
         ntp_result(state, -1, NULL);
     }
 }
@@ -566,7 +565,6 @@ static bool net_ntp(char *ntp_server)
             state->dns_request_sent = true;
             if (err == ERR_OK) {
                 ntp_request(state); // Cached result
-                rval = true;
                 break;
             } else if (err != ERR_INPROGRESS) { // ERR_INPROGRESS means expect a callback
                 printf("\ndns request failed(%d)\n", i+1);
@@ -576,7 +574,7 @@ static bool net_ntp(char *ntp_server)
     }
     free(state);
 
-    return rval;
+    return true;
 }
 
 /**
@@ -585,7 +583,7 @@ static bool net_ntp(char *ntp_server)
 bool netNTP_connect(char *server)
 {
     bool rval = false;
-    static char buf_ntp[20];
+    static char buf_ntp[URL_MAX+2];
     static bool isConnected;
 
     if (netIsConnected == nON && isConnected == nOFF) {
@@ -594,15 +592,16 @@ bool netNTP_connect(char *server)
             // Default gw host assumed to hold NTP services
             strncpy(buf_ntp, ip4addr_ntoa(netif_ip4_gw(netif_list)), sizeof(buf_ntp));
         } else {
-            strncpy(buf_ntp, server, sizeof(buf_ntp));
+            strncpy(buf_ntp, server, URL_MAX);
         }
         if (net_ntp(buf_ntp) == false) {
             return rval;
         }
-        for (int i = 0; i < NTP_TEST_TIME/1000; i++) {
+        for (int i = 0; i < 4; i++) {   // Wait max for the ntp_result() callback
             sleep_ms(1000);
-            if (rtcIsSetDone == true ) { // Set in the ntp_result() or ntp_failed_handler() callbacks
+            if (rtcIsSetDone == true ) {
                 rtcIsSetDone = false;
+                rval = true;
                 isConnected = rval =  nON;
                 break;
             }
