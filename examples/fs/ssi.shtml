@@ -128,15 +128,6 @@
         }
     }
 
-    const isValidUrl = urlString=> {
-        try { 
-            return Boolean(new URL(urlString)); 
-        }
-        catch(e){ 
-            return false; 
-        }
-    }
-
     function isValidIP(ip)
     {
         var address = ip.value;
@@ -228,7 +219,19 @@
         }
 
         update_vols();
-       
+
+        var netDbg = document.getElementById("net_debug").value;
+        if (netDbg !== "false") {
+            var uptm = document.getElementById("uptm");
+            var msg = "";
+            var dbgArr = netDbg.split(',');
+            msg += "lostPing=" + dbgArr[0];
+            msg += ", outOfPcb=" + dbgArr[1];
+            msg += ", rebootCount=" + dbgArr[2];
+            msg += ", httpdReq=" + dbgArr[3];
+            msg += ", rebootTime=" + ToLocalDate(dbgArr[4]);
+            uptm.title = msg;
+        }   
     }
 
     function finish()
@@ -261,6 +264,7 @@
 <input type="hidden" name="fage" id="fage" value="<!--#FAGE-->">
 <input type="hidden" id="curepoch" value="<!--#EPOCH-->">
 <input type="hidden" id="wifiscans" value="<!--#WSCAN-->">
+<input type="hidden" id="net_debug" value="<!--#NDBG-->">
 <table>
     <tr>
     <th>Property</th>

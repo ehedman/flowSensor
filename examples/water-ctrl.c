@@ -39,9 +39,9 @@
 #include "LCD_1in14.h"
 #include "waterbcd.h"
 #include "water-ctrl.h"
-#ifdef NETRTC
+#ifdef HAS_NET
 #include "ssi.h"
-#endif /* NETRTC */
+#endif /* HAS_NET */
 
 /**
  * For debug purposes this app enters flash
@@ -443,16 +443,18 @@ void water_ctrl(void)
 
     memset(&pdata, 0, sizeof(persistent_data));
 
-    read_flash(&pdata);
+    if (read_flash(&pdata) == false) {
+        panic("\nread_flash failed: %s line %d\n", __FILENAME__, __LINE__);
+    }
 
     if (pdata.idt != IDT) {  // Set up defaults
         printf("Set default flash data\n");
-#ifdef NETRTC
+#ifdef HAS_NET
         strcpy(pdata.ssid, WIFI_SSID);
         strcpy(pdata.pass,WIFI_PASS);
         strcpy(pdata.ntp_server, NTP_SERVER);
         pdata.country = WIFI_COUNTRY;
-#endif /* NETRTC */
+#endif /* HAS_NET */
         pdata.tankVolume = TANK_VOLUME;
         pdata.totVolume = 0.0;
         pdata.filterVolume = 0.0;
@@ -469,8 +471,6 @@ void water_ctrl(void)
         panic("\nwaterCtrlInit failed: %s line %d\n", __FILENAME__, __LINE__);
     }
 
-    volTick = (1.0/60)/pdata.sensFq;
-
     if (pdata.filterAge <= 0) {
         pdata.filterAge = time(NULL) + SDAY; // Add a day to start with
     }
@@ -484,7 +484,7 @@ void water_ctrl(void)
         pdata.version = atof(sdata.versionString);
     }
 
-#ifdef NETRTC
+#ifdef HAS_NET
     if (wifi_connect(pdata.ssid, pdata.pass, pdata.country) == true) {
         if (netNTP_connect(pdata.ntp_server) == false) {
             printf("\nWiFi netNTP_operation failed\n");
@@ -502,6 +502,8 @@ void water_ctrl(void)
     while (1) {
 
         while(1) {
+
+            volTick = (1.0/60)/pdata.sensFq;    // sensFq can be updated from web. Re-evaluate here.
 
             if (FlowFreq > 0.0) {
                 litreMinute = (FlowFreq * 1 / pdata.sensFq);
@@ -540,7 +542,7 @@ void water_ctrl(void)
 
         while (FlowFreq == 0.0) {
 
-#ifdef NETRTC
+#ifdef HAS_NET
             static int tryConnect;
             static int tryPing;
             static int pingInterval;
@@ -562,18 +564,20 @@ void water_ctrl(void)
                 net_setconnection(nON);
             }
 
-#ifdef NETRTC_SANITY_CHECK  // Undef this if tcp_in-c.patch is not applied
-            extern int outOfPcb;
+#ifdef NET_SANITY_CHECK  // Undef this if tcp_in-c.patch is not applied
+            {
+                extern int outOfPcb;
 
-            if (outOfPcb > 0 && outOfPcb != sdata.outOfPcb ) {
-                printf("\noutOfPcb = %d\n", outOfPcb);
-                sdata.outOfPcb = outOfPcb;
-            }
+                if (outOfPcb > 0 && outOfPcb != sdata.outOfPcb ) {
+                    printf("\noutOfPcb = %d\n", outOfPcb);
+                    sdata.outOfPcb = outOfPcb;
+                }
 
-            if (sdata.outOfPcb > MAX_BAD_PCBS) {
-                sdata.inactivityTimer = 1;  //  Time to attempt a reboot
+                if (sdata.outOfPcb > MAX_BAD_PCBS) {
+                    sdata.inactivityTimer = 1;  //  Time to attempt a reboot
+                }
             }
-#endif
+#endif /* NET_SANITY_CHECK */
 
             if (tryScan++ > 24) {
                 memset(sdata.wfd, 0, sizeof(sdata.wfd));
@@ -595,7 +599,7 @@ void water_ctrl(void)
             }
 #else
             sleep_ms(1000);
-#endif
+#endif /* HAS_NET */
             DEV_SET_PWM(0); 
 
             if (doSave == true && delSave-- <= 0) { // Avoid repeated saves for rapid events
@@ -668,7 +672,7 @@ void water_ctrl(void)
  
             if (!gpio_get(StatusButt)) {
                 clearLog(HDR_INFO);
-#if defined NETRTC && defined NETRTC_DEBUG  // Show statistics to console only
+#if defined HAS_NET && defined NET_DEBUG  // Show statistics to console only
                 printf("\nLost ping sequences=%d, out of pcbs=%d, lifetime lwip exhausting reboots=%d\n", lostPing, sdata.outOfPcb, pdata.rebootCount);
                 printf("Last lwip exhausting reboot time: %s", ctime_r(&pdata.rebootTime, buffer_t));
 #endif
@@ -730,6 +734,7 @@ void water_ctrl(void)
 
                 if (FirmwareMode == true) {
                     printLog("Go Firmware");
+                    (void)write_flash(&pdata);
                     sleep_ms(3000);
                     reset_usb_boot(0,0);
                     /** NOT REACHED **/

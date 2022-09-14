@@ -7,12 +7,22 @@
  #error Run cmake to create DigiFlow.h
 #endif
 
+/** Eliminates compiler warning about unused arguments (GCC -Wextra -Wunused). */
+#ifndef APP_UNUSED_ARG
+#define APP_UNUSED_ARG(x) (void)x
+#endif /* APP_UNUSED_ARG
+
 /**
  * Check if we are building for Pico w, i.e, build invoked as 'PICO_BOARD=pico_w cmake  ..'
  */
 #if defined _BOARDS_PICO_W_H
-#define NETRTC      // Enable support for for pico_w, network and RTC hat, else pico legacy with LCD hat for testing only.
+#define HAS_NET     // Enable support for for pico_w network else pico legacy with or without LCD hat for testing only.
 #endif
+
+/*
+ * The RTC hat is attached
+ */
+#define HAS_RTC
 
 /**
  * For debugging
@@ -31,7 +41,7 @@
 #define SSID_MAX    32
 #define RSSI_MAX    10
 #define SSID_LIST   10
-#define PASS_MAX    63
+#define PASS_MAX    64
 #define URL_MAX     70
 
 /**
@@ -64,9 +74,9 @@ typedef struct s_data {
  */
 typedef struct p_data {
     uint8_t     checksum;
-    char        ssid[SSID_MAX];
-    char        pass[PASS_MAX];
-    char        ntp_server[URL_MAX];
+    char        ssid[SSID_MAX+2];
+    char        pass[PASS_MAX+2];
+    char        ntp_server[URL_MAX+2];
     uint32_t    country;
     float       totVolume;
     float       tankVolume;
@@ -82,12 +92,12 @@ typedef struct p_data {
 /**
  * Common functions used in this app
  */
-extern void     read_flash(persistent_data *pdata);
+extern bool     read_flash(persistent_data *pdata);
 extern bool     write_flash(persistent_data *new_data);
 extern void     goDormant(uint8_t dpin, persistent_data *pdata, shared_data *sdata);
 extern time_t   _time(time_t *tloc);
 
-#ifdef NETRTC
+#ifdef HAS_NET
 
 extern bool     netNTP_connect(char *server);
 extern bool     wifi_connect(char *ssid, char *pass, uint32_t country);
@@ -115,10 +125,10 @@ extern bool     wifi_find(char *ap);
  */
 #define MAX_BAD_PCBS    4
 #define MAX_BAD_PINGS   20
-#define NETRTC_SANITY_CHECK     // Undef this if tcp_in-c.patch is not applied
-#define NETRTC_DEBUG
+#define NET_SANITY_CHECK     // Undef this if tcp_in-c.patch is not applied
+#define NET_DEBUG
 
-#endif /* NETRTC */
+#endif /* HAS_NET */
 
 #define TANK_VOLUME     725.00                      // Water tank volume
 
@@ -148,7 +158,11 @@ extern bool     wifi_find(char *ap);
 #define SWEEK           (time_t)604800
 #define SDAY            (time_t)86400
 #define SHOUR           (time_t)3600
+#ifdef HAS_RTC
 #define TZ_RZONE        (0*SHOUR)           // Add relevant zone hours to RTC UTC
+#else
+#define TZ_RZONE        (2*SHOUR) 
+#endif
 #define FLTR_LIFETIME   (6*SMONTH)
 #define INACTIVITY_TIME (SHOUR*4)
 

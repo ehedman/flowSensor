@@ -45,7 +45,7 @@
 #include <hardware/watchdog.h>
 #include <hardware/structs/scb.h>
 #include "water-ctrl.h"
-#ifdef NETRTC
+#ifdef HAS_NET
 #include <pico/cyw43_arch.h>
 #include <lwip/opt.h>
 #include <lwip/dns.h>
@@ -55,7 +55,7 @@
 #include <lwip/ip_addr.h>
 #endif
 
-#ifndef NETRTC
+#ifndef HAS_NET
 #undef LWIP_RAW
 #endif
 
@@ -101,7 +101,7 @@ static void ping_init(const char*);
 
 #endif /* LWIP_RAW */
 
-#ifdef NETRTC
+#ifdef HAS_NET
 
 #define NTP_MSG_LEN 48
 #define NTP_PORT 123
@@ -122,13 +122,13 @@ typedef struct NTP_T_ {
 static bool rtcIsSetDone = false;
 static bool netIsConnected = nOFF;
 
-#endif /* NETRTC */
+#endif /* HAS_NET */
 
 /**
- * We're going to erase and reprogram a region 640k from the start of flash.
- * Once done, we can access this at XIP_BASE + 640k.
+ * We're going to erase and reprogram a region 740k from the start of flash.
+ * Once done, we can access this at XIP_BASE + 740k.
 */
-#define FLASH_TARGET_OFFSET (640 * 1024)    // Eventually move up as the application growes.
+#define FLASH_TARGET_OFFSET (740 * 1024)    // Eventually move up as the application growes.
 
 static const uint8_t *flash_target_contents = (const uint8_t *) (XIP_BASE + FLASH_TARGET_OFFSET);
 
@@ -149,9 +149,16 @@ static void print_buf(const uint8_t *buf, size_t len) {
 /**
  * Read from flash
  */
-void read_flash(persistent_data *pdata)
+bool read_flash(persistent_data *pdata)
 {
+    if (sizeof(persistent_data) > FLASH_PAGE_SIZE) {
+        printf("\nFlash data exceeds size of page size (%d bytes)\n", FLASH_PAGE_SIZE);
+        return false;
+    }
+
     memcpy((uint8_t*)pdata, (void*)flash_target_contents, sizeof(persistent_data));
+
+    return true;
 }
 
 /**
@@ -163,12 +170,18 @@ bool write_flash(persistent_data *new_data)
     uint8_t *ndata = (uint8_t *)new_data;
     uint32_t ints;
     bool rval = true;  
-    uint8_t cs;
+    uint8_t cs = 0;
     static persistent_data old_data;
+
+    if (sizeof(persistent_data) > FLASH_PAGE_SIZE) {
+        // May grow during development
+        printf("\nFlash data exceeds size of page size (%d bytes)\n", FLASH_PAGE_SIZE);
+        return false; 
+    }
 
     read_flash(&old_data);
 
-    for (int i = sizeof(uint8_t); i < sizeof(persistent_data); i++) {
+    for (int i = (int)sizeof(uint8_t); i < (int)sizeof(persistent_data); i++) {
         cs += ndata[i];
     }
 
@@ -184,7 +197,7 @@ bool write_flash(persistent_data *new_data)
 
     memset(flash_data, 0, sizeof(flash_data));
 
-    for (int i = 0; i < sizeof(persistent_data); i++) {
+    for (int i = 0; i < (int)sizeof(persistent_data); i++) {
         flash_data[i] = ndata[i];
     }
 
@@ -196,7 +209,7 @@ bool write_flash(persistent_data *new_data)
 
     flash_range_program(FLASH_TARGET_OFFSET, flash_data, FLASH_PAGE_SIZE);
 
-    for (int i = 0; i < sizeof(persistent_data); ++i) {
+    for (int i = 0; i < (int)sizeof(persistent_data); ++i) {
         if (flash_data[i] != flash_target_contents[i])
             rval = false;
     }
@@ -206,106 +219,8 @@ bool write_flash(persistent_data *new_data)
     return rval;   
 }
 
-#ifdef NETRTC
-/**
- * Return logical connection status
- */
-bool net_checkconnection(void)
-{
-    return netIsConnected;
-}
 
-/**
- * Set logical connection status
- */
-void net_setconnection(bool mode)
-{
-    netIsConnected = mode;
-}
-
-/**
- * Connect to AP
- */
-bool wifi_connect(char *ssid, char *pass, uint32_t country)
-{
-    int rval = 0;
-    time_t retry;
-    static bool partInit;
-
-    if (netIsConnected == nON) {
-        printf("Repeated connection request ignored\n");
-        return netIsConnected;
-    }
-
-    netIsConnected = nOFF;
-
-    ssid[SSID_MAX-1] = pass[PASS_MAX-1] = '\0';
-
-    if (!ssid[strspn(ssid, OKCHAR)] == '\0') {
-        printf("SSID contains illegal characters\n");
-        return netIsConnected;
-    }
-
-
-    if (!pass[strspn(pass, OKCHAR)] == '\0') {
-        printf("WPA2 password contains illegal characters\n");
-        return netIsConnected;
-    }
-
-    printf("Attempt connection to %s with pass %s and country code %d\n", ssid, pass, country);
-
-    if (partInit == false) {
-
-        if ((rval = cyw43_arch_init_with_country(country))) {
-            printf("\ncyw43_arch_init_with_country failed: %s/%d/%d/%d\n", __FILENAME__, __LINE__, country, rval);
-            return netIsConnected;
-        }
-
-        cyw43_arch_enable_sta_mode();
-
-        /**
-         * this seems to be the best be can do using the predefined `cyw43_pm_value` macro:
-         * cyw43_wifi_pm(&cyw43_state, CYW43_PERFORMANCE_PM);
-         * however it doesn't use the `CYW43_NO_POWERSAVE_MODE` value, so we do this instead:
-         */
-        cyw43_wifi_pm(&cyw43_state, cyw43_pm_value(CYW43_NO_POWERSAVE_MODE, 20, 1, 1, 1));
-
-        partInit = true;
-    }
-
-    for (int i = 0; i < 3; i++) {
-        retry = time(NULL);
-        if ((rval = cyw43_arch_wifi_connect_timeout_ms(ssid, pass, CYW43_AUTH_WPA2_AES_PSK, CONNECTION_TMO))) {
-            //printf("\ncyw43_arch_wifi_connect_timeout_ms failed: %s/%d/%s/%d\n", __FILENAME__, __LINE__, ssid, rval);
-            switch (rval) {
-                case CYW43_LINK_NONET:      printf("No matching SSID found");       break;
-                case CYW43_LINK_BADAUTH:    printf("Authenticatation failure");     break;
-                case CYW43_LINK_FAIL:       printf("Link failure");                 break;
-                default: printf("Connection fail with return value = %d", rval);    break;
-            }
-            printf(" after %llu seconds. Timeout was set to %llus\n", time(NULL)-retry, CONNECTION_TMO/1000);
-
-            if (rval < 0 && time(NULL) - retry < 4) {
-                printf("Retry %d/3\n", i+1);
-                sleep_ms(2000);
-            } else {
-                netIsConnected = nOFF;
-            }
-        }
-        if (rval == 0) {
-            char *gw;
-            printf("Got I.P adress %s for %s\n", ip4addr_ntoa(netif_ip4_addr(netif_list)), CYW43_HOST_NAME);
-            printf("Got gateway adress %s\n", (gw=ip4addr_ntoa(netif_ip4_gw(netif_list))));
-            goodPing = netIsConnected = nON;
-            ping_init(gw);  // Initialize the periodic ping function.
-
-            break;
-        }
-    }
-
-    return netIsConnected;
-}
-
+#ifdef HAS_RTC
 /**
  * Initialize the DS3231 piggy-back RTC module
  */
@@ -411,9 +326,142 @@ static time_t ds3231ReadTime()
 /**
  * Wrapper for the ds3231
  */
-static void set_rtc(struct tm *utc)
+static void set_rtc(struct tm *utc, time_t *epoch)
 {
+    APP_UNUSED_ARG(epoch);
     ds3231SetTime(utc);
+}
+
+/**
+ * A private implementation of time()
+ */
+time_t _time(time_t *tloc)
+{
+    APP_UNUSED_ARG(tloc);
+    return ds3231ReadTime() + TZ_RZONE;
+}
+
+#else /* HAS_RTC */
+
+static time_t volatile_epoch;
+time_t _time(time_t *tloc)
+{
+    APP_UNUSED_ARG(tloc);
+
+    if (volatile_epoch == 0) {          // If not set yet
+        volatile_epoch = 1660411426;    // Fake time around Sat Aug 13 17:20 202
+    }
+    return volatile_epoch +  TZ_RZONE + get_absolute_time()/1000000;
+}
+
+static void set_rtc(struct tm *utc, time_t *epoch)
+{
+    APP_UNUSED_ARG(utc);
+
+    volatile_epoch = *epoch;
+}
+
+#endif  /* HAS_RTC */
+
+
+#ifdef HAS_NET
+/**
+ * Return logical connection status
+ */
+bool net_checkconnection(void)
+{
+    return netIsConnected;
+}
+
+/**
+ * Set logical connection status
+ */
+void net_setconnection(bool mode)
+{
+    netIsConnected = mode;
+}
+
+/**
+ * Connect to AP
+ */
+bool wifi_connect(char *ssid, char *pass, uint32_t country)
+{
+    int rval = 0;
+    time_t retry;
+    static bool partInit;
+
+    if (netIsConnected == nON) {
+        printf("Repeated connection request ignored\n");
+        return netIsConnected;
+    }
+
+    netIsConnected = nOFF;
+
+    ssid[SSID_MAX-1] = pass[PASS_MAX-1] = '\0';
+
+    if (!ssid[strspn(ssid, OKCHAR)] == '\0') {
+        printf("SSID contains illegal characters\n");
+        return netIsConnected;
+    }
+
+
+    if (!pass[strspn(pass, OKCHAR)] == '\0') {
+        printf("WPA2 password contains illegal characters\n");
+        return netIsConnected;
+    }
+
+    printf("Attempt connection to %s with pass %s and country code %d\n", ssid, pass, country);
+
+    if (partInit == false) {
+
+        if ((rval = cyw43_arch_init_with_country(country))) {
+            printf("\ncyw43_arch_init_with_country failed: %s/%d/%d/%d\n", __FILENAME__, __LINE__, country, rval);
+            return netIsConnected;
+        }
+
+        cyw43_arch_enable_sta_mode();
+
+        /**
+         * this seems to be the best be can do using the predefined `cyw43_pm_value` macro:
+         * cyw43_wifi_pm(&cyw43_state, CYW43_PERFORMANCE_PM);
+         * however it doesn't use the `CYW43_NO_POWERSAVE_MODE` value, so we do this instead:
+         */
+        cyw43_wifi_pm(&cyw43_state, cyw43_pm_value(CYW43_NO_POWERSAVE_MODE, 20, 1, 1, 1));
+
+        partInit = true;
+    }
+
+    for (int i = 0; i < 3; i++) {
+        retry = time(NULL);
+        if ((rval = cyw43_arch_wifi_connect_timeout_ms(ssid, pass, CYW43_AUTH_WPA2_AES_PSK, CONNECTION_TMO))) {
+            //printf("\ncyw43_arch_wifi_connect_timeout_ms failed: %s/%d/%s/%d\n", __FILENAME__, __LINE__, ssid, rval);
+            switch (rval) {
+                case CYW43_LINK_NONET:      printf("No matching SSID found");       break;
+                case CYW43_LINK_BADAUTH:    printf("Authenticatation failure");     break;
+                case CYW43_LINK_FAIL:       printf("Link failure");                 break;
+                default: printf("Connection fail with return value = %d", rval);    break;
+            }
+            printf(" after %llu seconds. Timeout was set to %llus\n", time(NULL)-retry, CONNECTION_TMO/1000);
+
+            if (rval < 0 && time(NULL) - retry < 4) {
+                printf("Retry %d/3\n", i+1);
+                sleep_ms(2000);
+            } else {
+                netIsConnected = nOFF;
+            }
+        }
+        if (rval == 0) {
+            char *gw;
+            printf("Got I.P adress %s for %s\n", ip4addr_ntoa(netif_ip4_addr(netif_list)), CYW43_HOST_NAME);
+            printf("Got gateway adress %s\n", (gw=ip4addr_ntoa(netif_ip4_gw(netif_list))));
+            goodPing = netIsConnected = nON;
+            ping_init(gw);  // Initialize the periodic ping function.
+
+            break;
+        }
+    }
+
+    return netIsConnected;
 }
 
 /**
@@ -426,7 +474,7 @@ static void ntp_result(NTP_T* state, int status, time_t *result)
         printf("Got ntp response: %02d/%02d/%04d %02d:%02d:%02d\n", utc->tm_mday, utc->tm_mon + 1, utc->tm_year + 1900,
                utc->tm_hour, utc->tm_min, utc->tm_sec);
         printf("Set RTC accordingly\n");
-        set_rtc(utc);
+        set_rtc(utc, result);
         rtcIsSetDone = true;
     }
 
@@ -443,6 +491,8 @@ static void ntp_result(NTP_T* state, int status, time_t *result)
  */
 static int64_t ntp_failed_handler(alarm_id_t id, void *user_data)
 {
+    APP_UNUSED_ARG(id);
+
     NTP_T* state = (NTP_T*)user_data;
     printf("\nntp request failed\n");
     ntp_result(state, -1, NULL);
@@ -491,6 +541,9 @@ static void ntp_dns_found(const char *hostname, const ip_addr_t *ipaddr, void *a
  */
 static void ntp_recv(void *arg, struct udp_pcb *pcb, struct pbuf *p, const ip_addr_t *addr, u16_t port)
 {
+
+    APP_UNUSED_ARG(pcb);
+
     NTP_T *state = (NTP_T*)arg;
     uint8_t mode = pbuf_get_at(p, 0) & 0x7;
     uint8_t stratum = pbuf_get_at(p, 1);
@@ -617,6 +670,9 @@ bool netNTP_connect(char *server)
  */
 static int scan_result(void *env, const cyw43_ev_scan_result_t *result)
 {
+
+    APP_UNUSED_ARG(env);
+
     int indx;
     extern shared_data sdata; 
 
@@ -692,21 +748,7 @@ bool wifi_find(char *ap)
     return rval;
 }
 
-/**
- * A private implementation of time()
- */
-time_t _time(time_t *tloc)
-{
-    return ds3231ReadTime() + TZ_RZONE;
-}
-
-#else /* NETRTC */
-time_t _time(time_t *tloc)
-{
-    return 1660411426 + get_absolute_time()/1000000;    // Fake time around Sat Aug 13 17:20 2022
-}
-
-#endif /* NETRTC */
+#endif /* HAS_NET */
 
 #if 0
 static void measure_freqs(void)
@@ -746,10 +788,11 @@ static void recover_from_sleep(uint scb_orig, uint clock0_orig, uint clock1_orig
  */
 void goDormant(uint8_t dpin, persistent_data *pdata, shared_data *sdata)
 {
+
     static char buffer_t[60];
     time_t curtime = time(NULL);
 
-#if defined NETRTC && defined NETRTC_SANITY_CHECK
+#if defined HAS_NET && defined NET_SANITY_CHECK
     /** 
      * The lwip stack is prone to run out of listening PCBs from time to time (at least in my environment)
      * and it is difficult to recover from that situation without a re-boot. The variations in

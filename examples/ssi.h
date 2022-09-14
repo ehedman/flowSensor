@@ -4,7 +4,7 @@
 #include <time.h>
 #include "water-ctrl.h"
 
-#ifdef NETRTC
+#ifdef HAS_NET
 
 #include "lwipopts.h"
 #include <pico/cyw43_arch.h>
@@ -32,6 +32,7 @@
     TAG(UPTM)  \
     TAG(HNAME) \
     TAG(WSCAN) \
+    TAG(NDBG)  \
 
 #define GENERATE_ENUM(ENUM) ENUM,
 #define GENERATE_STRING(STRING) #STRING,
@@ -73,6 +74,9 @@ u16_t __time_critical_func(ssi_handler)(int iIndex, char *pcInsert, int iInsertL
     static char wscans[sizeof(sdata.wfd)+SSID_LIST+2];
     size_t printed;
     static time_t curtime;
+#ifdef NET_DEBUG
+    static int httpdReq;
+#endif
 
     if (iIndex == CURTM) { // CURTM expected to occur only one time and early in ssi.shtml
         if (sdata.inactivityTimer < SHOUR/2) {  // Don't go dormant anythime soon ..
@@ -88,8 +92,7 @@ u16_t __time_critical_func(ssi_handler)(int iIndex, char *pcInsert, int iInsertL
                 strcat(wscans, ",");
             }
         }
-#ifdef NETRTC_DEBUG
-        static int httpdReq;
+#ifdef NET_DEBUG      
         printf("Httpd request no. %d\n", ++httpdReq);
 #endif
     }
@@ -145,6 +148,13 @@ u16_t __time_critical_func(ssi_handler)(int iIndex, char *pcInsert, int iInsertL
         break;
         case WSCAN: // Scanned WiFi hosts
             printed = snprintf(pcInsert, iInsertLen, "%s", wscans);
+        break;
+        case NDBG: // Some debug data
+#ifdef NET_DEBUG
+            printed = snprintf(pcInsert, iInsertLen, "%d,%d,%d,%d,%llu", sdata.lostPing, sdata.outOfPcb, pdata.rebootCount, httpdReq, pdata.rebootTime);
+#else
+            printed = snprintf(pcInsert, iInsertLen, "false");
+#endif
         break;
         default:    // unknown tag
         printed = 0;
@@ -290,7 +300,7 @@ err_t httpd_post_receive_data(void *connection, struct pbuf *p)
     LWIP_ASSERT("NULL pbuf", p != NULL);
 
     if (current_connection == connection) {
-        for (int indx = 0; indx < LWIP_ARRAYSIZE(ssi_html_tags); indx++) {
+        for (int indx = 0; indx < (int)LWIP_ARRAYSIZE(ssi_html_tags); indx++) {
             char *tag = (char*)ssi_html_tags[indx];
 
             memset(buf_t, 0, sizeof(buf_t));
