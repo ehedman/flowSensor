@@ -85,10 +85,10 @@
 #define POLLRATE            250     // Main loop interval in ms
 
 static UWORD *BlackImage;
-static char HdrStr[100]     = { "Header" };
-static int HdrTxtColor      = HDR_OK;
-static bool FirstLogline    = true;
-static bool FirmwareMode    = FLASHMODE;
+static char HdrStr[100]         = { "Header" };
+static uint16_t HdrTxtColor     = HDR_OK;
+static bool FirstLogline        = true;
+static bool FirmwareMode        = FLASHMODE;
 
 /**
  * Joystick buttons on the LCD_1in14
@@ -144,10 +144,10 @@ static void printHdr(const char *format , ...)
     vsprintf(txt, format, arglist);
     va_end(arglist);
 
-    txt[MAX_CHAR] = '\0';
+    txt[MAX_CHAR-1] = '\0';
 
     // Center align and trim with white spaces
-    int padlen = (MAX_CHAR - strlen(txt)) / 2;
+    int padlen = (MAX_CHAR - (int)strlen(txt)) / 2;
     sprintf(HdrStr, "%*s%s%*s", padlen, "", txt, 0, "");
 
     Paint_DrawRectangle(0,0,LCD_HEIGHT,FONT_PADDING,HdrTxtColor, DOT_PIXEL_1X1,DRAW_FILL_FULL);
@@ -179,12 +179,15 @@ static void printLog(const char *format , ...)
         FirstLogline = false;
     }
 
+    buf[MAX_CHAR-1] = '\0';
+    int blenght = (int)strlen(buf);
+
     // To stdio serial also
     printf("%s\r\n", buf);
 
     for (curLine=0; curLine <MAX_LINES; curLine++) {
         if (lines[curLine][0] == (unsigned char)0x0) {
-            strncpy(lines[curLine], buf, MAX_CHAR);
+            strncpy(lines[curLine], buf, blenght < MAX_CHAR? blenght: MAX_CHAR);
             break;
         }
 
@@ -194,7 +197,7 @@ static void printLog(const char *format , ...)
             for (curLine=1; curLine <MAX_LINES; curLine++) {
                 strncpy(lines[curLine-1], lines[curLine], MAX_CHAR);
             }
-            strncpy(lines[MAX_LINES-1], buf, MAX_CHAR);
+            strncpy(lines[MAX_LINES-1], buf, blenght < MAX_CHAR? blenght: MAX_CHAR);
         }
     }
 
@@ -460,7 +463,7 @@ void water_ctrl(void)
         pdata.filterVolume = 0.0;
         pdata.filterAge = time(NULL) + SDAY;
         pdata.sensFq = SENS_FQC;
-        pdata.version = atof(sdata.versionString);
+        pdata.version = (float)atof(sdata.versionString);
         pdata.rebootCount = 0;
         pdata.rebootTime = time(NULL);
         pdata.idt = IDT;
@@ -480,8 +483,8 @@ void water_ctrl(void)
         printf("Using default value for FQ: %.2f\n", SENS_FQC);
     }
 
-    if (pdata.version != atof(sdata.versionString)) {
-        pdata.version = atof(sdata.versionString);
+    if (pdata.version != (float)atof(sdata.versionString)) {
+        pdata.version = (float)atof(sdata.versionString);
     }
 
 #ifdef HAS_NET
@@ -517,7 +520,7 @@ void water_ctrl(void)
 
             } else if (tmo-- <= 0) {
                 info_t = localtime( &pdata.filterAge);
-                strftime(buffer_t, sizeof(buffer_t), "%m/%d/%y", info_t);
+                strftime(buffer_t, sizeof(buffer_t), "%d/%m/%y", info_t);
                 clearLog(HDR_INFO);
                 printHdr("No FLow");
                 printLog("USE=%.0fL", pdata.totVolume + sessLitre);
@@ -557,10 +560,10 @@ void water_ctrl(void)
             if (ping_status() == false && tryPing++ >= 10) {
                 net_setconnection(nOFF);
                 printf("\nLost ping sequences %d times\n", ++sdata.lostPing);
-                tryPing = 0;       
+                tryPing = 0;  
+                lostPing++;   
             } else if (ping_status() == true) {
-                lostPing += sdata.lostPing;
-                sdata.lostPing = tryConnect = tryPing = 0;
+                lostPing = tryConnect = tryPing = 0;
                 net_setconnection(nON);
             }
 
@@ -572,12 +575,12 @@ void water_ctrl(void)
                     printf("\noutOfPcb = %d\n", outOfPcb);
                     sdata.outOfPcb = outOfPcb;
                 }
-
-                if (sdata.outOfPcb > MAX_BAD_PCBS) {
-                    sdata.inactivityTimer = 1;  //  Time to attempt a reboot
-                }
             }
 #endif /* NET_SANITY_CHECK */
+
+            if (sdata.outOfPcb > MAX_BAD_PCBS || lostPing > MAX_BAD_PINGS) {
+                    sdata.inactivityTimer = 1;  //  Time to attempt a reboot
+            }
 
             if (tryScan++ > 24) {
                 memset(sdata.wfd, 0, sizeof(sdata.wfd));
@@ -622,7 +625,7 @@ void water_ctrl(void)
                 }
 
                 info_t = localtime(&pdata.filterAge);
-                strftime(buffer_t, sizeof(buffer_t), "%m/%d/%y", info_t);
+                strftime(buffer_t, sizeof(buffer_t), "%d/%m/%y", info_t);
                 printLog("FXD=%s", buffer_t);
                 DEV_SET_PWM(DEF_PWM);
                 sleep_ms(1000);
@@ -642,7 +645,7 @@ void water_ctrl(void)
                     pdata.filterAge = curtime +SDAY; // Add a day fromn now
                 }
                 info_t = localtime( &pdata.filterAge);
-                strftime(buffer_t, sizeof(buffer_t), "%m/%d/%y", info_t);
+                strftime(buffer_t, sizeof(buffer_t), "%d/%m/%y", info_t);
                 printLog("FXD=%s", buffer_t);
                 DEV_SET_PWM(DEF_PWM);
                 sleep_ms(1000);
@@ -673,16 +676,16 @@ void water_ctrl(void)
             if (!gpio_get(StatusButt)) {
                 clearLog(HDR_INFO);
 #if defined HAS_NET && defined NET_DEBUG  // Show statistics to console only
-                printf("\nLost ping sequences=%d, out of pcbs=%d, lifetime lwip exhausting reboots=%d\n", lostPing, sdata.outOfPcb, pdata.rebootCount);
+                printf("\nLost ping sequences=%d, out of pcbs=%d, lifetime lwip exhausting reboots=%d\n", sdata.lostPing, sdata.outOfPcb, pdata.rebootCount);
                 printf("Last lwip exhausting reboot time: %s", ctime_r(&pdata.rebootTime, buffer_t));
 #endif
                 printHdr("STATUS");
                 printLog("USE=%.0fL", pdata.totVolume);
                 printLog("REM=%.0fL", pdata.tankVolume - pdata.totVolume);
                 info_t = localtime(&pdata.filterAge);
-                strftime(buffer_t, sizeof(buffer_t), "%m/%d/%y", info_t);
+                strftime(buffer_t, sizeof(buffer_t), "%d/%m/%y", info_t);
                 printLog("FXD=%s", buffer_t);
-                printLog("FLV=%.0f", pdata.filterVolume);
+                printLog("FLV=%.0fL", pdata.filterVolume);
                 DEV_SET_PWM(DEF_PWM);
                 sleep_ms(10000);
 
@@ -701,12 +704,12 @@ void water_ctrl(void)
                 continue;
             }
 
-            if (!gpio_get(JsUp)) {              // Fine-tune the sensors' Q value +
+            if (!gpio_get(JsUp) && pdata.sensFq < 14.2) {              // Fine-tune the sensors' Q value +
                 clearLog(HDR_INFO);
                 printHdr("FQ INC");
-                pdata.sensFq += 0.50;
+                pdata.sensFq += 0.20;
                 volTick = (1.0/60)/pdata.sensFq;
-                printLog("Adj FQ + 0.50");
+                printLog("Adj FQ + 0.20");
                 printLog("New FQ = %.2f", pdata.sensFq);
                 DEV_SET_PWM(DEF_PWM);
                 sleep_ms(2000);
@@ -714,12 +717,12 @@ void water_ctrl(void)
                 continue;
             }
 
-            if (!gpio_get(JsDown) && pdata.sensFq > 0.50) {     // Fine-tune the sensors' Q value -
+            if (!gpio_get(JsDown) && pdata.sensFq > 4.2) {     // Fine-tune the sensors' Q value -
                 clearLog(HDR_INFO);
                 printHdr("FQ DEC");
-                pdata.sensFq -= 0.50;
+                pdata.sensFq -= 0.20;
                 volTick = (1.0/60)/pdata.sensFq;
-                printLog("Adj FQ - 0.50");
+                printLog("Adj FQ - 0.20");
                 printLog("New FQ = %.2f", pdata.sensFq);
                 DEV_SET_PWM(DEF_PWM);
                 sleep_ms(2000);
@@ -751,7 +754,7 @@ void water_ctrl(void)
             }
 
             if (--sdata.inactivityTimer == 0) {
-                goDormant(dWakeUpPin, &pdata, &sdata);    // Save some more energy (some ticks may be lost at resume)
+                goDormant(dWakeUpPin, &pdata, &sdata, lostPing);    // Save some more energy (some ticks may be lost at resume)
                 sdata.inactivityTimer = INACTIVITY_TIME;
                 break;  // We do have flow now
             }

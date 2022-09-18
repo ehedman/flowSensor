@@ -226,7 +226,7 @@ bool write_flash(persistent_data *new_data)
  */
 static void ds3231Init(void)
 {
-    static int ds3231InitStatus;
+    static bool ds3231InitStatus;
     
     if (!ds3231InitStatus) {
 	    i2c_init(I2C_PORT,100*1000);
@@ -234,7 +234,7 @@ static void ds3231Init(void)
 	    gpio_set_function(I2C_SCL,GPIO_FUNC_I2C);
 	    gpio_pull_up(I2C_SDA);
 	    gpio_pull_up(I2C_SCL);
-	    //ds3231InitStatus = 1;
+	    ds3231InitStatus = true;
     }
 }
 
@@ -259,7 +259,7 @@ static uint8_t decimal_to_bcd(uint8_t number)
  */
 static void ds3231SetTime(struct tm *utc)
 {
-    char tbuf[2];
+    uint8_t tbuf[2];
 
     ds3231Init();
 
@@ -301,7 +301,7 @@ static time_t ds3231ReadTime()
 {
     static struct tm utc;
     uint8_t val = 0; 
-    static char  buf[10];
+    static uint8_t buf[10];
 
     ds3231Init();
 
@@ -410,12 +410,12 @@ bool wifi_connect(char *ssid, char *pass, uint32_t country)
         return netIsConnected;
     }
 
-    printf("Attempt connection to %s with pass %s and country code %d\n", ssid, pass, country);
+    printf("Attempt connection to %s with pass %s and country code %lu\n", ssid, pass, country);
 
     if (partInit == false) {
 
         if ((rval = cyw43_arch_init_with_country(country))) {
-            printf("\ncyw43_arch_init_with_country failed: %s/%d/%d/%d\n", __FILENAME__, __LINE__, country, rval);
+            printf("\ncyw43_arch_init_with_country failed: %s/%d/%lu/%d\n", __FILENAME__, __LINE__, country, rval);
             return netIsConnected;
         }
 
@@ -643,7 +643,7 @@ bool netNTP_connect(char *server)
 
         if (!strncmp(server, "0.0.0.0", 7)) {
             // Default gw host assumed to hold NTP services
-            strncpy(buf_ntp, ip4addr_ntoa(netif_ip4_gw(netif_list)), sizeof(buf_ntp));
+            strncpy(buf_ntp, ip4addr_ntoa(netif_ip4_gw(netif_list)), sizeof(buf_ntp)-1);
         } else {
             strncpy(buf_ntp, server, URL_MAX);
         }
@@ -786,20 +786,20 @@ static void recover_from_sleep(uint scb_orig, uint clock0_orig, uint clock1_orig
 /**
  * Go dormant after a lwip status check.
  */
-void goDormant(uint8_t dpin, persistent_data *pdata, shared_data *sdata)
+void goDormant(uint8_t dpin, persistent_data *pdata, shared_data *sdata, int lostPing)
 {
 
     static char buffer_t[60];
     time_t curtime = time(NULL);
 
-#if defined HAS_NET && defined NET_SANITY_CHECK
+#if defined HAS_NET
     /** 
      * The lwip stack is prone to run out of listening PCBs from time to time (at least in my environment)
      * and it is difficult to recover from that situation without a re-boot. The variations in
      * this behavior is very inconsistent over a day period, and for this reason this sanity check will
      * attempt a reboot of the pico_w.
      */
-    if (sdata->outOfPcb > MAX_BAD_PCBS || sdata->lostPing > MAX_BAD_PINGS) {
+    if (sdata->outOfPcb > MAX_BAD_PCBS || lostPing > MAX_BAD_PINGS) {
 
         if (pdata->rebootTime + SHOUR/4 < curtime) {   // Avoid quick boot loops
             pdata->rebootTime = curtime;
@@ -814,6 +814,8 @@ void goDormant(uint8_t dpin, persistent_data *pdata, shared_data *sdata)
             }
         }
     }
+#else
+    APP_UNUSED_ARG(pdata); APP_UNUSED_ARG(sdata); APP_UNUSED_ARG(lostPing);
 #endif
 
     printf("Skipping dormant for now\n"); return;   // Until tested firmly - also it only works in "pico" mode not "pico_w"

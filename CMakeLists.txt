@@ -41,7 +41,7 @@ if (PICO_CYW43_SUPPORTED) # set by command 'PICO_BOARD=pico_w cmake  ..'
 
         add_compile_definitions(CYW43_HOST_NAME="${HOSTNAME}")
         target_compile_definitions(examples PRIVATE CYW43_HOST_NAME="${HOSTNAME}")
-        target_compile_options(examples PRIVATE  -Wextra -Wunused)
+        target_compile_options(examples PRIVATE  -Wextra -Wunused -Wall)
 
         set(MAKE_FS_DATA_SCRIPT ${CMAKE_CURRENT_LIST_DIR}/external/makefsdata)
 

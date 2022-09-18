@@ -10,7 +10,7 @@
 /** Eliminates compiler warning about unused arguments (GCC -Wextra -Wunused). */
 #ifndef APP_UNUSED_ARG
 #define APP_UNUSED_ARG(x) (void)x
-#endif /* APP_UNUSED_ARG
+#endif
 
 /**
  * Check if we are building for Pico w, i.e, build invoked as 'PICO_BOARD=pico_w cmake  ..'
@@ -94,7 +94,7 @@ typedef struct p_data {
  */
 extern bool     read_flash(persistent_data *pdata);
 extern bool     write_flash(persistent_data *new_data);
-extern void     goDormant(uint8_t dpin, persistent_data *pdata, shared_data *sdata);
+extern void     goDormant(uint8_t dpin, persistent_data *pdata, shared_data *sdata, int lostPing);
 extern time_t   _time(time_t *tloc);
 
 #ifdef HAS_NET

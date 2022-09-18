@@ -72,7 +72,7 @@ u16_t __time_critical_func(ssi_handler)(int iIndex, char *pcInsert, int iInsertL
     extern shared_data sdata;
     static char buffer_t[60];
     static char wscans[sizeof(sdata.wfd)+SSID_LIST+2];
-    size_t printed;
+    int printed;
     static time_t curtime;
 #ifdef NET_DEBUG
     static int httpdReq;
@@ -108,7 +108,7 @@ u16_t __time_critical_func(ssi_handler)(int iIndex, char *pcInsert, int iInsertL
             printed = snprintf(pcInsert, iInsertLen, "%s", pdata.ntp_server);
         break;
         case COU:   // Country code
-            printed = snprintf(pcInsert, iInsertLen, "%d", pdata.country);
+            printed = snprintf(pcInsert, iInsertLen, "%lu", pdata.country);
         break;
         case TOTV:  // Total consumed volume
             printed = snprintf(pcInsert, iInsertLen, "%.0f", pdata.totVolume);
@@ -211,7 +211,7 @@ static int decode(const char *s, char *out)
 {
 	char *o;
 	const char *end = s + strlen(s);
-	int c;
+	unsigned int c;
  
 	for (o = out; s <= end; o++) {
 		c = *s++;
@@ -310,7 +310,7 @@ err_t httpd_post_receive_data(void *connection, struct pbuf *p)
             }
             strcat(buf_t, "=");
 
-            if ((token = pbuf_memfind(p, buf_t, strlen(buf_t), 0)) == 0xFFFF) {
+            if ((token = pbuf_memfind(p, buf_t, (u16_t)strlen(buf_t), 0)) == 0xFFFF) {
                 //printf("not found %s\n", buf_t);
                 continue;
             }
@@ -337,16 +337,16 @@ err_t httpd_post_receive_data(void *connection, struct pbuf *p)
                     //printf("(%d)param=%s\n", indx, dec);
 
                     switch (indx) {
-                        case SSID: strcpy(pdata.ssid, dec);         break;
-                        case PASS: strcpy(pdata.pass, dec);         break;
-                        case NTP:  strcpy(pdata.ntp_server, dec);   break;
-                        case COU:  pdata.country = atol(dec);       break;
-                        case TOTV: pdata.totVolume = atof(dec);     break;
-                        case TNKV: pdata.tankVolume = atof(dec);    break;
-                        case FQV:  pdata.sensFq = atof(dec);        break;
-                        case FAGE: pdata.filterAge = atol(dec);     break;
-                        case FVOL: pdata.filterVolume = atof(dec);  break;
-                        default: /* unknown/ignored tag */          break;
+                        case SSID: strcpy(pdata.ssid, dec);                 break;
+                        case PASS: strcpy(pdata.pass, dec);                 break;
+                        case NTP:  strcpy(pdata.ntp_server, dec);           break;
+                        case COU:  pdata.country = (float)atol(dec);        break;
+                        case TOTV: pdata.totVolume = (float)atof(dec);      break;
+                        case TNKV: pdata.tankVolume = (float)atof(dec);     break;
+                        case FQV:  pdata.sensFq = (float)atof(dec);         break;
+                        case FAGE: pdata.filterAge = (float)atol(dec);      break;
+                        case FVOL: pdata.filterVolume = (float)atof(dec);   break;
+                        default: /* unknown/ignored tag */                  break;
                     }      
                 }
             }      
