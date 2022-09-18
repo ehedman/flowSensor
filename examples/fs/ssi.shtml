@@ -2,13 +2,35 @@
 <html lang="en">
 <head>
     <title><!--#HNAME--></title>
-    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">     
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
     <meta name="description" content="hedmanshome.se Marine Water FlowMeter">
     <meta name="author" content="Erland Hedman">
     <meta name="license" content="Free">
     <link rel="icon" href="drop.ico">
 
     <style>
+
+    body {
+        top: 0px !important;
+        padding: 20px;
+        padding-top: 0px;
+        min-width: 1100px;
+        width: auto !important;
+    }
+
+    .goog-te-banner-frame.skiptranslate {
+        display: none !important;
+    }
+
+    .goog-te-gadget-simple {
+        position: absolute;
+        top: 0px;
+        right: 20px;
+    }
+
+    .goog-te-gadget-icon {
+        display: none;
+    }
 
     table {
         font-family: arial, sans-serif;
@@ -27,10 +49,9 @@
         background-color: #dddddd;
     }
 
-    body {
-        padding: 20px;
-        min-width: 1100px; 
-        width: auto !important;
+    #trButt {
+        position:relative;
+        float: right;
     }
 
     </style>
@@ -75,7 +96,7 @@
         if (day.length < 2) 
             day = '0' + day;
 
-        return [year, month, day].join('-');
+        return [day, month, year].join('-');
     }
 
     function ToLocalDate (inDate) {
@@ -128,29 +149,33 @@
         }
     }
 
-    function isValidIP(ip)
+    function validIPmsg(obj, stat)
     {
-        var address = ip.value;
+        if (stat == true)
+            obj.title = "Enter I.P or URL";
+        else
+            obj.title = "Garbled NTP Server Address";
+
+        return stat;
+    }
+
+    function isValidIP(obj)
+    {
+        var address = obj.value;
         var patt = /^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/;
         var match = address.match(patt);
 
         if (address == "255.255.255.255") {
-            return false;
+            return validIPmsg(obj, false);
         }
 
         if (match == null) {
             if (! /^[a-zA-Z0-9_.~-]+$/.test(address)) { // valid URL?
-                return false;
+                return validIPmsg(obj, false);
             }
         }
            
-        return true;
-    }
-
-    function isValidSSID(ssid) { 
-        var str = ssid.value;
-
-        return /^[!#;].|[+\[\]/"\t\s].*$/.test(str);
+        return validIPmsg(obj, true);
     }
 
     function update_vols()
@@ -208,15 +233,16 @@
             }
         }
 
-        var ntpVal = document.getElementById("ntp").value;
+        var ntpObj = document.getElementById("ntp");
         var opt = document.getElementById("ntpopt");
 
         for(i=0; i<opt.options.length; i++){
-            if (opt.options[i].value === ntpVal) {
+            if (opt.options[i].value === ntpObj.value) {
                 opt.options[i].selected = 'selected';
                 break;
             }
         }
+        isValidIP(ntpObj);
 
         update_vols();
 
@@ -234,18 +260,24 @@
         }   
     }
 
+    function googleTranslateElementInit(stat)
+    {
+        if (stat != null)  {
+            new google.translate.TranslateElement({pageLanguage: 'en',
+                includedLanguages: 'sv,fi,da,nl,fr,de,el,ga,tr,es,is,pl,ja,it',
+                layout: google.translate.TranslateElement.InlineLayout.SIMPLE
+            }, 'google_translate_element');
+
+            document.getElementById("trButt").style.visibility='hidden';
+        }
+    }
+
     function finish()
     {
         var ntpObj = document.getElementById("ntp");
-        var ssidObj = document.getElementById("ssid");
 
         if (isValidIP(ntpObj) == false) {
-            alert("Error: Garbled NTP Server Adress");
-            return false;
-        }
-
-        if (isValidSSID(ssidObj) == true) {
-            alert("Error: Garbled SSID string");
+            ntpObj.focus();
             return false;
         }
 
@@ -258,7 +290,12 @@
 
 <body onload="init()">
 
-<h1><!--#HNAME--> @ <!--#IPAD-->  <!--#CURTM--></h1>
+<h3 style="margin: 6px;"><!--#HNAME--> @ <!--#IPAD-->  <!--#CURTM-->
+    <button id="trButt" type="button" onclick="googleTranslateElementInit(true)">Translate</button>
+</h3>
+
+<div id="google_translate_element"></div>
+<script src="https://translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
 
 <form name="form" id="form" method="post" onsubmit="return finish()" action="/index.html">
 <input type="hidden" name="fage" id="fage" value="<!--#FAGE-->">
@@ -275,7 +312,7 @@
     <tr>  
         <td><label for="ssid">SSID</label></td>
         <td>
-            <input type="text" id="ssid" maxlength="32" name="ssid" value="<!--#SSID-->">
+            <input type="text" pattern='[^!#;,].+[^+,\]/"]' required id="ssid" maxlength="32" name="ssid" value="<!--#SSID-->">
             <select id="wifisel" title="scanned hosts" style="width: 140px;" onchange="wifi_sel(this)">
                 <option selected value="0">Select ssid</option>
             </select>
@@ -284,9 +321,9 @@
     </tr>
 
     <tr>
-        <td><label for="pass">PASS</label></td>
+        <td><label for="pass">Password</label></td>
         <td>
-            <input type="password" id="pass" name="pass" maxlength="64" value="<!--#PASS-->">
+            <input type="password" required id="pass" name="pass" minlength="8" maxlength="63" value="<!--#PASS-->">
             <input type="checkbox" onclick="showPass()">Show Password
         </td>
         <td>WiFi Password&sup1;</td>
@@ -358,7 +395,7 @@
     <tr>
         <td><label for="ntp">NTP Server</label></td>
         <td>
-            <input type="text" id="ntp" name="ntp" maxlength="70" title="Enter I.P or URL" value="<!--#NTP-->">
+            <input type="text" onmouseover="isValidIP(this)" id="ntp" name="ntp" minlength="1" maxlength="70" value="<!--#NTP-->">
             <select name="ntpopt" id="ntpopt" title="ntpopt" style="width: 140px;" onchange="upd_ntp(this)">
                 <option selected value="0">Select new</option>
                 <option value="0.0.0.0">Auto</option>
@@ -390,8 +427,8 @@
 
     <tr>
       <td><label for="fqv">F/Q Value for Sensor</label></td>
-      <td><input type="number" min="4" max="14" title="Float 4-14: 0.5 incr" id="fqv" name="fqv" step="0.5" oninput="validity.valid||(value='');" value="<!--#FQV-->"></td>
-    <td>Frequency F=(<!--#FQV-->*Q)Q=L/MIN</td>
+      <td><input type="number" min="4" max="14" title="Float 4-14: 0.2 incr" id="fqv" name="fqv" step="0.2" oninput="validity.valid||(value='');" value="<!--#FQV-->"></td>
+    <td title="See datasheet for sensor Q value">Frequency F=(<!--#FQV-->*Q)Q=L/MIN</td>
     </tr>
 
     <tr>
@@ -443,7 +480,6 @@
 <p>&sup1; Reboot required.</p>
 <p>Changing any of the SSID, PASS and Country Code parameters will result a lost connection the next time this device is
 rebooted.<br>You then have to regain the connection by joining your host to that new AP WiFi network.</p>
-
 
 </body>
 </html>

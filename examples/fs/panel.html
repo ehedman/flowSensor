@@ -2,13 +2,34 @@
 <html lang="en">
 <head>
     <title>DigiFLow 242</title>
-    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">     
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
     <meta name="description" content="hedmanshome.se Marine Water FlowMeter">
     <meta name="author" content="Erland Hedman">
     <meta name="license" content="Free">
     <link rel="icon" href="drop.ico">
 
     <style>
+
+    body {
+        padding: 20px;
+        min-width: 920px; 
+        width: auto !important;
+        top: 0px !important;
+    }
+
+    .goog-te-banner-frame.skiptranslate {
+        display: none !important;
+    }
+
+    .goog-te-gadget-simple {
+        position: absolute;
+        top: 0px;
+        right: 20px;
+    }
+
+    .goog-te-gadget-icon {
+        display: none;
+    }
 
     table {
         font-family: arial, sans-serif;
@@ -25,12 +46,6 @@
 
     tr:nth-child(even) {
         background-color: #dddddd;
-    }
-
-    body {
-        padding: 20px;
-        min-width: 920px; 
-        width: auto !important;
     }
 
   .tank {
@@ -68,6 +83,11 @@
         font-size: 20px;
     }
 
+    #trButt {
+        position:relative;
+        float: right;
+    }
+
     </style>
 
     <script>
@@ -83,7 +103,7 @@
         if (day.length < 2) 
             day = '0' + day;
 
-        return [month, day, year.toString().substring(2,4)].join('/');
+        return [day, month, year.toString().substring(2,4)].join('/');
     }
 
     function ToLocalDate (inDate) {
@@ -102,10 +122,21 @@
         var flv = url.searchParams.get("flv");
 
         document.getElementById("tvolTag").innerHTML=tvol;
-        document.getElementById("tnkv").innerHTML="USE="+tnkv;
-        document.getElementById("rem").innerHTML="REM="+(tvol-tnkv);
-        document.getElementById("flv").innerHTML="FLV="+flv;
+        document.getElementById("tnkv").innerHTML="USE="+tnkv+"L";
+        document.getElementById("rem").innerHTML="REM="+(tvol-tnkv)+"L";
+        document.getElementById("flv").innerHTML="FLV="+flv+"L";
         document.getElementById("fxd").innerHTML="FXD="+ToLocalDate(fxd);      
+    }
+
+    function googleTranslateElementInit(stat)
+    {
+        if (stat != null)  {
+            new google.translate.TranslateElement({pageLanguage: 'en',
+                includedLanguages: 'sv,fi,da,nl,fr,de,el,ga,tr,es,is,pl,ja,it',
+                layout: google.translate.TranslateElement.InlineLayout.SIMPLE
+            }, 'google_translate_element');
+            document.getElementById("trButt").style.visibility='hidden';;          
+        }
     }
 
     </script>
@@ -114,12 +145,17 @@
 
 <body onload="init()">
 
+<button id="trButt" type="button" onclick="googleTranslateElementInit(true)">Translate</button>
+
+<div id="google_translate_element"></div>
+<script src="https://translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
+
 <table>
     <tr>
         <td style="border: 0">Measures your <b id="tvolTag"></b> litres of water flow to help you know when to 
                 change your water filter or fill up your water tank.
         </td>
-        <td style="border: 0">
+        <td style="border: 0" translate="no">
             <div class="center-div">
                 <div class="tank">
                     <img title="Control Panel" alt="The Control Panel" width="300" height="256" src="panel.png">
@@ -148,10 +184,10 @@
         <th>Description</th>
     </tr>
     <tr>
-        <td>Joystick</td><td>Up</td><td>Fine-tune the sensors' Q value + 0.5</td>
+        <td>Joystick</td><td>Up</td><td>Fine-tune the sensors' Q value + 0.2</td>
     </tr>
     <tr>
-        <td>Joystick</td><td>Down</td><td>Fine-tune the sensors' Q value - 0.5</td>
+        <td>Joystick</td><td>Down</td><td>Fine-tune the sensors' Q value - 0.2</td>
     </tr>
     <tr>
         <td>Joystick</td><td>Left</td><td>Adjust filter expiration date - month</td>
@@ -172,17 +208,18 @@
     <tr>
         <td colspan="3"><p>Display abbrevations:</p></td>
     </tr>
+
     <tr>
-        <td colspan="2">USE=&numero;L</td><td>Currently used tank volume</td>
+        <td translate="no" colspan="2">USE=&numero;L</td><td>Currently used tank volume</td>
     </tr>
     <tr>
-        <td colspan="2">REM=&numero;L</td><td>Currently remaining tank volume</td>
+        <td translate="no" colspan="2">REM=&numero;L</td><td>Currently remaining tank volume</td>
     </tr>
     <tr>
-        <td colspan="2">FXD=DATE</td><td>Filter expiration date (M/D/Y)</td>
+        <td translate="no" colspan="2">FXD=DATE</td><td>Filter expiration date (D/M/Y)</td>
     </tr>
     <tr>
-        <td colspan="2">FLV=&numero;L</td><td>Volume passed through filter</td>
+        <td translate="no" colspan="2">FLV=&numero;L</td><td>Volume passed through filter</td>
     </tr>
 
     <tr><td colspan="3"></td></tr>
