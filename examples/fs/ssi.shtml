@@ -32,6 +32,14 @@
         display: none;
     }
 
+    #goog-gt-tt, .goog-te-balloon-frame {
+        display: none !important;
+    } 
+
+    .goog-text-highlight {
+        background: none !important; box-shadow: none !important;
+    }
+
     table {
         font-family: arial, sans-serif;
         border-collapse: collapse;
@@ -52,6 +60,35 @@
     #trButt {
         position:relative;
         float: right;
+    }
+
+    .input-group {
+        float: left;
+        width: auto;
+    }
+
+    .input-group:has(:invalid) { /* has() not supported on firefox 106 */
+      border: 2px solid red;
+      animation: shake 0.82s cubic-bezier(.36,.07,.19,.97) both;
+      transform: translate3d(0, 0, 0);
+    }
+
+    @keyframes shake {
+      10%, 90% {
+        transform: translate3d(-1px, 0, 0);
+      }
+      
+      20%, 80% {
+        transform: translate3d(2px, 0, 0);
+      }
+
+      30%, 50%, 70% {
+        transform: translate3d(-4px, 0, 0);
+      }
+
+      40%, 60% {
+        transform: translate3d(4px, 0, 0);
+      }
     }
 
     </style>
@@ -151,10 +188,13 @@
 
     function validIPmsg(obj, stat)
     {
-        if (stat == true)
+        if (stat == true) {
             obj.title = "Enter I.P or URL";
-        else
+            obj.setCustomValidity('');
+        } else {
             obj.title = "Garbled NTP Server Address";
+            obj.setCustomValidity('.');
+        }
 
         return stat;
     }
@@ -304,7 +344,7 @@
 <input type="hidden" id="net_debug" value="<!--#NDBG-->">
 <table>
     <tr>
-    <th>Property</th>
+    <th>Properties</th>
     <th>Value</th>
     <th>Description</th>
     </tr>
@@ -312,7 +352,9 @@
     <tr>  
         <td><label for="ssid">SSID</label></td>
         <td>
-            <input type="text" pattern='[^!#;,].+[^+,\]/"]' required id="ssid" maxlength="32" name="ssid" value="<!--#SSID-->">
+            <div class="input-group">
+                <input type="text" title="Max 32 characters" pattern='[^!#;,].+[^+,\]/"]' required id="ssid" maxlength="32" name="ssid" value="<!--#SSID-->">
+            </div>
             <select id="wifisel" title="scanned hosts" style="width: 140px;" onchange="wifi_sel(this)">
                 <option selected value="0">Select ssid</option>
             </select>
@@ -323,7 +365,9 @@
     <tr>
         <td><label for="pass">Password</label></td>
         <td>
-            <input type="password" required id="pass" name="pass" minlength="8" maxlength="63" value="<!--#PASS-->">
+            <div class="input-group">
+                <input type="password" title="8-63 characters" required id="pass" name="pass" minlength="8" maxlength="63" value="<!--#PASS-->">
+            </div>
             <input type="checkbox" onclick="showPass()">Show Password
         </td>
         <td>WiFi Password&sup1;</td>
@@ -395,16 +439,18 @@
     <tr>
         <td><label for="ntp">NTP Server</label></td>
         <td>
-            <input type="text" onmouseover="isValidIP(this)" id="ntp" name="ntp" minlength="1" maxlength="70" value="<!--#NTP-->">
-            <select name="ntpopt" id="ntpopt" title="ntpopt" style="width: 140px;" onchange="upd_ntp(this)">
+            <div class="input-group">
+                <input type="text" onmouseover="isValidIP(this)" id="ntp" name="ntp" minlength="1" maxlength="70" value="<!--#NTP-->">
+            </div>
+            <select name="ntpopt" id="ntpopt" title="NTP Server" style="width: 140px;" onchange="upd_ntp(this)">
                 <option selected value="0">Select new</option>
-                <option value="0.0.0.0">Auto</option>
+                <option value="0.0.0.0">AP</option>
                 <option value="time.google.com">time.google.com</option>
                 <option value="time.windows.com">time.windows.com</option>
                 <option value="time.apple.com">time.apple.com</option>
             </select> 
         </td>
-        <td>0.0.0.0 = Auto (NTP service of the AP)&sup1;</td>
+        <td>0.0.0.0 = AP (NTP service of the Access Point)&sup1;</td>
     </tr>
 
     <tr>
