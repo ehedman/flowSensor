@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <title>DigiFLow 242</title>
+    <title>.</title>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
     <meta name="description" content="hedmanshome.se Marine Water FlowMeter">
     <meta name="author" content="Erland Hedman">
@@ -11,9 +11,10 @@
     <style>
 
     html, body {
-        min-width: 1100px;
+        min-width: 1024px;
         width: min-content;
         background: -webkit-gradient(linear, left top, left bottom, from(#fff), to(#cbccc8)) fixed;
+        font-size: 0.98rem;
     }
 
     html {
@@ -77,6 +78,8 @@
         text-align: left;
         background-color: #04AA6D;
         color: white;
+        border: none;
+        border-radius: 3px;
     }
 
     tr:hover {
@@ -84,7 +87,9 @@
     }
 
     p, a {
-      font-size: 16px;
+        font-size: 0.9em;
+        text-decoration: none; 
+        font-family: helvetica, arial, sans-serif;
     }
 
   .tank {
@@ -125,6 +130,7 @@
     #trButt, #google_translate_element  {
         position:relative;
         float: right;
+        font-size: small;
     }
 
     </style>
@@ -159,6 +165,7 @@
         var tnkv = url.searchParams.get("tnkv");
         var fxd = url.searchParams.get("fxd");
         var flv = url.searchParams.get("flv");
+        document.title = url.searchParams.get("title");
 
         document.getElementById("tvolTag").innerHTML=tvol;
         document.getElementById("tnkv").innerHTML="USE="+tnkv+"L";
@@ -171,7 +178,7 @@
     {
         if (stat != null)  {
             new google.translate.TranslateElement({pageLanguage: 'en',
-                includedLanguages: 'sv,fi,da,nl,fr,de,el,ga,tr,es,is,pl,ja,it',
+                includedLanguages: 'sv,fi,da,no,nl,fr,de,el,ga,tr,es,is,pl,ja,it',
                 layout: google.translate.TranslateElement.InlineLayout.SIMPLE
             }, 'google_translate_element');
             document.getElementById("trButt").style.visibility='hidden';;          

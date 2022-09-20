@@ -14,6 +14,7 @@
         min-width: 1024px;
         width: min-content;
         background: -webkit-gradient(linear, left top, left bottom, from(#fff), to(#cbccc8)) fixed;
+        font-size: 0.98rem;
     }
 
     html {
@@ -88,19 +89,45 @@
         text-align: left;
         background-color: #04AA6D;
         color: white;
+        border: none;
+        border-radius: 3px;
     }
     
     tr:hover {
         background-color: #ddd;
     }
+
+    button, checkbox, input, select, number, table {
+        font-size: inherit;
+        box-sizing: border-box;
+        border: 1px solid black;
+        background: inherit;
+    }
+
+    table {
+        border: none;
+    }
+
+    select, input, number {
+        background: white;
+    }
+
+    .submit {
+        float: right;
+        font-size: inherit;
+        background: inherit;
+    }
     
     #trButt, #google_translate_element  {
         position:relative;
         float: right;
+        font-size: small;
     }
 
     p, a {
-      font-size: 16px;
+        font-size: 0.9em;
+        text-decoration: none; 
+        font-family: helvetica, arial, sans-serif;
     }
 
     .input-group {
@@ -212,7 +239,7 @@
             objd.style.background = "yellow";
             objd.title = "About to expire";
         } else {
-            objd.style.background = "#fff";
+            objd.style.background = "white";
             objd.title = "";
         }
     }
@@ -287,7 +314,7 @@
             objd.style.background = "yellow";
             objd.title = "About to expire";
         } else {
-            objd.style.background = "#fff";
+            objd.style.background = "white";
             objd.title = "";
         }
 
@@ -345,7 +372,7 @@
     {
         if (stat != null)  {
             new google.translate.TranslateElement({pageLanguage: 'en',
-                includedLanguages: 'sv,fi,da,nl,fr,de,el,ga,tr,es,is,pl,ja,it',
+                includedLanguages: 'sv,fi,da,no,nl,fr,de,el,ga,tr,es,is,pl,ja,it',
                 layout: google.translate.TranslateElement.InlineLayout.SIMPLE
             }, 'google_translate_element');
 
@@ -559,15 +586,15 @@
  
 </table>
 <br>
-<input type="submit" value="Submit" title="Save changes" style="float: right;">
+<input type="submit" class="submit" value="Submit" title="Save changes" style="float: right;">
 </form>
 <button type="button" title="Undo changes" onclick="location.reload(true)">Refresh</button>
 
 &nbsp;&nbsp;&nbsp;
-<a href="/panel.html?tvol=<!--#TNKV-->&tnkv=<!--#TOTV-->&fxd=<!--#FAGE-->&flv=<!--#FVOL-->">About the Control Panel</a>
+<a href="/panel.html?tvol=<!--#TNKV-->&tnkv=<!--#TOTV-->&fxd=<!--#FAGE-->&flv=<!--#FVOL-->&title=<!--#HNAME-->">About the Control Panel</a>
 
 <p>&sup1; Reboot required.<br>
-Changing any of the SSID, PASS and Country Code parameters will result a lost connection the next time this device is
+Changing any of the SSID, Password or Country Code parameters will result a lost connection the next time this device is
 rebooted. You then have to regain the connection by joining your host to that new AP WiFi network.</p>
 </div>
 </body>
