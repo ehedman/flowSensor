@@ -31,7 +31,7 @@ Once integrated with the Waveshare build structure:
 - The hostname of this Pico W is set to DigiFlow, so it should be possible to surf in to the device referenced that name (+plus your domain name).
 
 ### Test
-It is possible to test this app on a bare Pico W without the extra hats and just browse in to this device home page. I such case, disable RTC in the water-ctrl.h to get sane date timestamps.
+It is possible to test this app on a bare Pico W without the extra hats and just browse in to this device home page. In such case, disable the RTC define in the water-ctrl.h to get sane date timestamps.
 
 To folow the console output, attach a seral to USB dongle to the Picos' No 1 (output)  pin.
 
