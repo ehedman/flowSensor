@@ -400,7 +400,7 @@ bool wifi_connect(char *ssid, char *pass, uint32_t country)
     ssid[SSID_MAX-1] = pass[PASS_MAX-1] = '\0';
 
     if (!ssid[strspn(ssid, OKCHAR)] == '\0') {
-        printf("SSID contains illegal characters\n");
+        printf("SSID (%s) contains illegal characters\n", ssid);
         return netIsConnected;
     }
 
