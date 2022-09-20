@@ -30,6 +30,11 @@ Once integrated with the Waveshare build structure:
 - make install will install the main.uf2 into /media/(your logname)/RPI-RP2 assuming here that this folder is automounted when the Pico is set to "BOOTSEL" mode.
 - The hostname of this Pico W is set to DigiFlow, so it should be possible to surf in to the device referenced that name (+plus your domain name).
 
+### Test
+It is possible to test this app on a bare Pico W without the extra hats and just browse in to this device home page. I such case, disable RTC in the water-ctrl.h to get sane date timestamps.
+
+To folow the console output, attach a seral to USB dongle to the Picos' No 1 (output)  pin.
+
 ### External dependencies
 - ARM Cross delevopment tools for the Pico (apt install gcc-arm-none-eabi)
 - [Pico SDK](https://github.com/raspberrypi/pico-sdk)
@@ -39,7 +44,7 @@ Once integrated with the Waveshare build structure:
 - [krzmaz's blog](http://krzmaz.com/2022-08-15-creating-a-web-server-on-raspberry-pi-pico-w-using-pico-sdk-and-lwip)
 
 ### Screenshot
-<img src="http://hedmanshome.se/digi242-1.png" width=100%></br>
-<img src="http://hedmanshome.se/digi242-2.png" width=100%></br>
+<img src="http://hedmanshome.se/digi242-10.png" width=100%></br>
+<img src="http://hedmanshome.se/digi242-20.png" width=100%></br>
 
     
