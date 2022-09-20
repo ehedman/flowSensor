@@ -22,7 +22,7 @@
 /*
  * The RTC hat is attached
  */
-#define HAS_RTC
+//#define HAS_RTC
 
 /**
  * For debugging
@@ -67,7 +67,7 @@ typedef struct s_data {
 /**
  * Validation tag for the p_data struct in flash
  */
-#define IDT         0x3FC8727B
+#define IDT         0x3FC8727A
 
 /**
  * Main control data type to be saved in flash
@@ -111,14 +111,14 @@ extern bool     wifi_find(char *ap);
 #define PICO_CYW43_ARCH_THREADSAFE_BACKGROUND 1
 
 #define WIFI_COUNTRY    CYW43_COUNTRY_SWEDEN
-#define WIFI_SSID       "sy-madonna-24"
-#define WIFI_PASS       "090a0b0c0d"
+#define WIFI_SSID       "pegasus"
+#define WIFI_PASS       "090e0b0c0d"
 #define NTP_SERVER      "0.0.0.0"                   // 0.0.0.0 = auto i.e assume DHCP host also is NTP server
 
 /**
  * OK chars for URLs and WiFi text properties
  */
-#define OKCHAR   "abcdefghijklmnopqrstvwxzyABCDEFGHIJKLMNOPQRTSVWXZY0123456789-"
+#define OKCHAR   "abcdefghijklmnopqrstuvwxzyABCDEFGHIJKLMNOPQRTSUVWXZY0123456789-"
 
 /**
  * For debugging: Monitor out of PCB events etc
