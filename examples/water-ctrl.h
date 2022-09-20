@@ -111,9 +111,9 @@ extern bool     wifi_find(char *ap);
 #define PICO_CYW43_ARCH_THREADSAFE_BACKGROUND 1
 
 #define WIFI_COUNTRY    CYW43_COUNTRY_SWEDEN
-#define WIFI_SSID       "pegasus"
-#define WIFI_PASS       "090e0b0c0d"
-#define NTP_SERVER      "0.0.0.0"                   // 0.0.0.0 = auto i.e assume DHCP host also is NTP server
+#define WIFI_SSID       "my-ap"
+#define WIFI_PASS       "password"
+#define NTP_SERVER      "time.google.com"                   // 0.0.0.0 = auto i.e assume DHCP host also is NTP server
 
 /**
  * OK chars for URLs and WiFi text properties
