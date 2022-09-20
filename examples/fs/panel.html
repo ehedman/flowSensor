@@ -10,11 +10,30 @@
 
     <style>
 
+    html, body {
+        min-width: 1100px;
+        width: min-content;
+        background: -webkit-gradient(linear, left top, left bottom, from(#fff), to(#cbccc8)) fixed;
+    }
+
+    html {
+        display: table;
+        margin: auto;
+    }
+
     body {
-        padding: 20px;
-        min-width: 920px; 
-        width: auto !important;
+        display: table-cell;
         top: 0px !important;
+        padding-top: 8px; 
+    }
+
+    .content {
+        border: 1px solid gray;
+        padding: 4px;
+        padding-right: 6px;
+        padding-left: 6px;
+        background: #f2f2f2;
+        width: 100%;
     }
 
     .goog-te-banner-frame.skiptranslate {
@@ -52,8 +71,20 @@
         width: 30%;
     }
 
-    tr:nth-child(even) {
-        background-color: #dddddd;
+    .theader {
+        padding-top: 4px;
+        padding-bottom: 4px;
+        text-align: left;
+        background-color: #04AA6D;
+        color: white;
+    }
+
+    tr:hover {
+        background-color: #ddd;
+    }
+
+    p, a {
+      font-size: 16px;
     }
 
   .tank {
@@ -91,7 +122,7 @@
         font-size: 20px;
     }
 
-    #trButt {
+    #trButt, #google_translate_element  {
         position:relative;
         float: right;
     }
@@ -153,6 +184,8 @@
 
 <body onload="init()">
 
+<div class="content">
+
 <button id="trButt" type="button" onclick="googleTranslateElementInit(true)">Translate</button>
 
 <div id="google_translate_element"></div>
@@ -187,9 +220,9 @@
         <td colspan="3"><p>Buttons:</p></td>
     </tr>
     <tr>
-        <th>Type</th>
-        <th>Action</th>
-        <th>Description</th>
+        <th class="theader">Type</th>
+        <th class="theader">Action</th>
+        <th class="theader">Description</th>
     </tr>
     <tr>
         <td>Joystick</td><td>Up</td><td>Fine-tune the sensors' Q value + 0.2</td>
@@ -237,5 +270,7 @@
 
 <a href="javascript:history.back()">Go Back</a>&nbsp;&nbsp;&nbsp;<a href="https://github.com/ehedman/flowSensor">On GitHub</a>
 
+</div>
 </body>
 </html>
+
