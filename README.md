@@ -44,7 +44,9 @@ To folow the console output, attach a seral to USB dongle to the Picos' No 1 (ou
 - [krzmaz's blog](http://krzmaz.com/2022-08-15-creating-a-web-server-on-raspberry-pi-pico-w-using-pico-sdk-and-lwip)
 
 ### Screenshot
-<img src="http://hedmanshome.se/digi242-10.png" width=100%></br>
-<img src="http://hedmanshome.se/digi242-21.png" width=100%></br>
+[Check THIS out](https://www.hedmanshome.se/digiflow.html)
+
+<img src="https://hedmanshome.se/digi242-10.png" width=100%></br>
+<img src="https://hedmanshome.se/digi242-21.png" width=100%></br>
 
     
