@@ -405,7 +405,7 @@
 
 <div class="content">
 
-<h3 style="margin: 6px;"><!--#HNAME--> @ <!--#IPAD-->  <!--#CURTM-->
+<h3 style="margin: 6px;"><!--#HNAME--> <!--#CURTM-->
     <button id="trButt" type="button" onclick="googleTranslateElementInit(true)">Translate</button>
 </h3>
 
