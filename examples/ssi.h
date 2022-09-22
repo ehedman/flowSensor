@@ -86,10 +86,10 @@ u16_t __time_critical_func(ssi_handler)(int iIndex, char *pcInsert, int iInsertL
         memset(wscans,0, sizeof(wscans));
         for (int i=0; i < sdata.ssidCount; i++) {
             strncat(wscans, sdata.wfd[i].ssid, SSID_MAX);
-            strcat(wscans, ",");
+            strcat(wscans, "|");
             strncat(wscans, sdata.wfd[i].rssi, RSSI_MAX);
             if (i < sdata.ssidCount-1) {
-                strcat(wscans, ",");
+                strcat(wscans, "|");
             }
         }
 #ifdef NET_DEBUG      

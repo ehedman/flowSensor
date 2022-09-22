@@ -135,6 +135,11 @@
         width: auto;
     }
 
+    h3 {
+        margin: 6px;
+        font-size: inherit;
+    }
+
     .input-group:has(:invalid) { /* has() not supported on firefox 106 */
       border: 2px solid red;
       animation: shake 0.82s cubic-bezier(.36,.07,.19,.97) both;
@@ -318,7 +323,7 @@
             objd.title = "";
         }
 
-        var ssidArr = document.getElementById("wifiscans").value.split(',');
+        var ssidArr = document.getElementById("wifiscans").value.split('|');
         var wfs = document.getElementById("wifisel");
         var wfs_option;
         for (var i = 0; i < ssidArr.length; i+=2) {
@@ -333,7 +338,6 @@
 
         var couVal = document.getElementById("cou").value;
         var opt = document.getElementById("couopt");
-
         for(i=0; i<opt.options.length; i++){
             if (opt.options[i].value === couVal) {
                 opt.options[i].selected = 'selected';
@@ -350,6 +354,7 @@
                 break;
             }
         }
+
         isValidIP(ntpObj);
 
         update_vols();
@@ -542,9 +547,9 @@
     </tr>
 
     <tr>
-      <td><label for="fqv">F/Q Value for Sensor</label></td>
-      <td><input type="number" min="4" max="14" title="Float 4-14: 0.2 incr" id="fqv" name="fqv" step="0.2" oninput="validity.valid||(value='');" value="<!--#FQV-->"></td>
-    <td title="See datasheet for sensor Q value">Frequency F=(<!--#FQV-->*Q)Q=L/MIN</td>
+        <td><label for="fqv">F/Q Value for Sensor</label></td>
+        <td><input type="number" min="4" max="14" title="Float 4-14: 0.2 incr" id="fqv" name="fqv" step="0.2" oninput="validity.valid||(value='');" value="<!--#FQV-->"></td>
+        <td title="See datasheet for sensor Q value">Frequency F=(<!--#FQV-->*Q)Q=L/MIN</td>
     </tr>
 
     <tr>
@@ -599,4 +604,5 @@ rebooted. You then have to regain the connection by joining your host to that ne
 </div>
 </body>
 </html>
+
 

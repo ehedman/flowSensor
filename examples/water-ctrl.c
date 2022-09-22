@@ -225,7 +225,7 @@ static void clearLog(int hdrColor)
 {
     HdrTxtColor = hdrColor;
     FirstLogline = true;
-    Paint_Clear(WHITE);
+    Paint_Clear(WHITE); 
 }
 
 /**

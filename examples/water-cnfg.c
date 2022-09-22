@@ -219,7 +219,6 @@ bool write_flash(persistent_data *new_data)
     return rval;   
 }
 
-
 #ifdef HAS_RTC
 /**
  * Initialize the DS3231 piggy-back RTC module
