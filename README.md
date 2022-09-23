@@ -33,7 +33,8 @@ Once integrated with the Waveshare build structure:
 ### Test
 It is possible to test this app on a bare Pico W without the extra hats and just browse in to this device home page. In such case, disable the RTC define in the water-ctrl.h to get sane date timestamps.
 
-The first time this app is installed on a fresh Pico W, the pico will enter AP (Access Point) mode and from there it can be configured as a ordinary (STA) wifi node. The passord for AP mode is "digiflow".
+The first time this app is installed on a fresh Pico W, the pico will enter AP (Access Point) mode and from there it can be configured as a ordinary (STA) wifi node. The passord for AP mode is "digiflow"
+and the GW I.P is 192.168.4.1 to point your browsser to.
 
 It is also possibe to switch between these modes by using display buttons. The AP mode is considered a "rescue" mode if the pico is somehow lost in the wifi universe.
 
