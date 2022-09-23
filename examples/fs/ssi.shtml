@@ -370,7 +370,12 @@
             msg += ", httpdReq=" + dbgArr[3];
             msg += ", rebootTime=" + ToLocalDate(dbgArr[4]);
             uptm.title = msg;
-        }   
+        }  
+
+        if (document.getElementById("apMode").value === "1") {
+            document.getElementById("apmDiv").style.display='block'; 
+            document.getElementById("trButt").style.display='none';
+        }
     }
 
     function googleTranslateElementInit(stat)
@@ -394,6 +399,10 @@
             return false;
         }
 
+        if (document.getElementById("apmCheck").checked == true) {
+            document.getElementById("apMode").value = "2";
+        }
+
         return true;
     }
 
@@ -410,12 +419,13 @@
 </h3>
 
 <div id="google_translate_element"></div>
-<script src="https://translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
+<!--#TRNS-->
 
 <form name="form" id="form" method="post" onsubmit="return finish()" action="/index.html">
 <input type="hidden" name="fage" id="fage" value="<!--#FAGE-->">
 <input type="hidden" id="curepoch" value="<!--#EPOCH-->">
 <input type="hidden" id="wifiscans" value="<!--#WSCAN-->">
+<input type="hidden" name="apm" id="apMode" value="<!--#APM-->">
 <input type="hidden" id="net_debug" value="<!--#NDBG-->">
 <table>
     <tr>
@@ -593,6 +603,9 @@
 <br>
 <input type="submit" class="submit" value="Submit" title="Save changes" style="float: right;">
 </form>
+
+<div style="float: right; display: none;" id="apmDiv"><input type="checkbox" id="apmCheck">Leave AP mode on submit&nbsp;&nbsp;&nbsp;</div>
+
 <button type="button" title="Undo changes" onclick="location.reload(true)">Refresh</button>
 
 &nbsp;&nbsp;&nbsp;

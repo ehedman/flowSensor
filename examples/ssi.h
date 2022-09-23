@@ -10,6 +10,11 @@
 #include <pico/cyw43_arch.h>
 #include <lwip/apps/httpd.h>
 
+/*
+ * Plug in this when not in AP mode
+ */
+#define TRNS_SCRIPT "<script src=\"https://translate.google.com/translate_a/element.js?cb=googleTranslateElementInit\"></script>"
+
 /**
  * Max length of the tags defaults to be 8 chars: LWIP_HTTPD_MAX_TAG_NAME_LEN
  * Let the CPP take care of the enumeration and its strings.
@@ -33,6 +38,8 @@
     TAG(HNAME) \
     TAG(WSCAN) \
     TAG(NDBG)  \
+    TAG(TRNS)  \
+    TAG(APM)   \
 
 #define GENERATE_ENUM(ENUM) ENUM,
 #define GENERATE_STRING(STRING) #STRING,
@@ -156,6 +163,12 @@ u16_t __time_critical_func(ssi_handler)(int iIndex, char *pcInsert, int iInsertL
             printed = snprintf(pcInsert, iInsertLen, "false");
 #endif
         break;
+        case TRNS: // Do translation ?
+            printed = snprintf(pcInsert, iInsertLen, "%s", pdata.apMode == true? "" : TRNS_SCRIPT);
+        break;
+        case APM: // AP mode ?
+            printed = snprintf(pcInsert, iInsertLen, "%s", pdata.apMode == true? "1" : "0");
+        break;
         default:    // unknown tag
         printed = 0;
         break;
@@ -168,9 +181,11 @@ u16_t __time_critical_func(ssi_handler)(int iIndex, char *pcInsert, int iInsertL
 /**
  * Set the SSI handler function and start httpd
  */
-void init_httpd()
+void init_httpd(bool doIt)
 {
     size_t i;
+
+    if (doIt == false) return;
 
     for (i = 0; i < LWIP_ARRAYSIZE(ssi_html_tags); i++) {
         LWIP_ASSERT("tag too long for LWIP_HTTPD_MAX_TAG_NAME_LEN",
@@ -284,7 +299,7 @@ err_t httpd_post_begin (
  * Called for each pbuf of data that has been received for a POST. 
  * ATTENTION: The application is responsible for freeing the pbufs passed in!
  * Parameters:
- *  connection	Unique connection identifier.
+ *  connection	Unique connection identifier.apmDiv
  *  p	Received data.
  *
  * Returns:
@@ -295,6 +310,7 @@ err_t httpd_post_receive_data(void *connection, struct pbuf *p)
     extern persistent_data pdata;
     err_t ret;
     u16_t token, value_token, len_token;
+    int apMode = 0;
     static char buf_t[100];
 
     LWIP_ASSERT("NULL pbuf", p != NULL);
@@ -346,6 +362,7 @@ err_t httpd_post_receive_data(void *connection, struct pbuf *p)
                         case FQV:  pdata.sensFq = (float)atof(dec);         break;
                         case FAGE: pdata.filterAge = (float)atol(dec);      break;
                         case FVOL: pdata.filterVolume = (float)atof(dec);   break;
+                        case APM:  apMode = atoi(dec);                      break;
                         default: /* unknown/ignored tag */                  break;
                     }      
                 }
@@ -358,6 +375,14 @@ err_t httpd_post_receive_data(void *connection, struct pbuf *p)
 
         if (pdata.totVolume > pdata.tankVolume) {
             pdata.totVolume = pdata.tankVolume;
+        }
+
+        if (apMode == 2 && pdata.apMode == true) {
+            pdata.apMode = false;
+            write_flash(&pdata);
+            watchdog_enable(1, 1);  // Reboot to STA mode
+            while(1);
+            /** NOT REACHED **/
         }
 
         write_flash(&pdata);

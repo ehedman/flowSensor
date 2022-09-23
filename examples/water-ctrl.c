@@ -163,7 +163,7 @@ static void printHdr(const char *format , ...)
  */
 static void printLog(const char *format , ...)
 {
-    static char buf[MAX_CHAR*2];
+    static char buf[MAX_CHAR*3];
     static va_list arglist;
     va_start(arglist, format);
     vsprintf(buf, format, arglist);
@@ -356,7 +356,7 @@ static void core1Thread(void)
         }
 
     } else {
-            printLog("Cannot run core1");
+            printLog("Core1 failed!");
     }
 
 }
@@ -466,6 +466,7 @@ void water_ctrl(void)
         pdata.version = (float)atof(sdata.versionString);
         pdata.rebootCount = 0;
         pdata.rebootTime = time(NULL);
+        pdata.apMode = true;
         pdata.idt = IDT;
         write_flash(&pdata);
     }
@@ -488,11 +489,11 @@ void water_ctrl(void)
     }
 
 #ifdef HAS_NET
-    if (wifi_connect(pdata.ssid, pdata.pass, pdata.country) == true) {
-        if (netNTP_connect(pdata.ntp_server) == false) {
+    if (wifi_connect(&pdata) == true) {
+        if (netNTP_connect(&pdata) == false) {
             printf("\nWiFi netNTP_operation failed\n");
         }
-        init_httpd();
+        init_httpd(!pdata.apMode);
         sleep_ms(1000);
     }
 #endif
@@ -582,6 +583,7 @@ void water_ctrl(void)
                     sdata.inactivityTimer = 1;  //  Time to attempt a reboot
             }
 
+
             if (tryScan++ > 24) {
                 memset(sdata.wfd, 0, sizeof(sdata.wfd));
                 sdata.ssidCount = 0;
@@ -592,10 +594,10 @@ void water_ctrl(void)
             if (tryConnect++ >= 10 && net_checkconnection() == false && wifi_find(pdata.ssid) == true) {
                 tryConnect = 0;
 
-                if (wifi_connect(pdata.ssid, pdata.pass, pdata.country) == true) {
-                    (void)netNTP_connect(pdata.ntp_server);
+                if (wifi_connect(&pdata) == true) {
+                    (void)netNTP_connect(&pdata);
                     sleep_ms(2000);
-                    init_httpd();
+                    init_httpd(!pdata.apMode);
                     tryScan = pingInterval = tryPing = 0;
                 }
                 continue;
@@ -614,45 +616,42 @@ void water_ctrl(void)
                 delSave = 0;
             }
             
-            if (!gpio_get(JsRight)) {       // Adjust filter expiration date +
-                curtime = time(NULL);
+            if (!gpio_get(JsRight)) {   // Go AP mode
                 clearLog(HDR_INFO);
-                printHdr("FLT INC DATE");
-                if (pdata.filterAge < curtime+S6MONTH) { // Don't move to far
-                    pdata.filterAge += SMONTH; // Add a month
-                } else {                 
-                    pdata.filterAge = curtime+S6MONTH;  // Max
-                }
-
-                info_t = localtime(&pdata.filterAge);
-                strftime(buffer_t, sizeof(buffer_t), "%d/%m/%y", info_t);
-                printLog("FXD=%s", buffer_t);
+                printHdr("Go AP mode");
+                printLog("PW=%s", APMODE_PASSWORD);
                 DEV_SET_PWM(DEF_PWM);
-                sleep_ms(1000);
-                delSave = 10;
-                doSave = true;
-                sdata.inactivityTimer = INACTIVITY_TIME;
-                continue;
+                pdata.apMode = true;
+                if (write_flash(&pdata) == false) {
+                    clearLog(HDR_ERROR);
+                    printHdr("Go AP mode");
+                    printLog("AP mode failed");
+                    sleep_ms(3000);
+                    continue;
+                }
+                sleep_ms(3000);
+                watchdog_enable(1, 1);  // Reboot
+                while(1);
+                /** NOT REACHED **/              
             }
 
-            if (!gpio_get(JsLeft)) {        // Adjust filter expiration date -
-                curtime = time(NULL);
+            if (!gpio_get(JsLeft)) {    // Go STA mode
                 clearLog(HDR_INFO);
-                printHdr("FLT DEC DATE");
-                if (pdata.filterAge > curtime +SMONTH) { // Don't move back in time
-                    pdata.filterAge -= SMONTH;
-                } else {
-                    pdata.filterAge = curtime +SDAY; // Add a day fromn now
-                }
-                info_t = localtime( &pdata.filterAge);
-                strftime(buffer_t, sizeof(buffer_t), "%d/%m/%y", info_t);
-                printLog("FXD=%s", buffer_t);
+                printHdr("Go STA mode");
+                printLog("%s", pdata.ssid); // ssid possibly truncated to MAX_CHAR
                 DEV_SET_PWM(DEF_PWM);
-                sleep_ms(1000);
-                delSave = 10;
-                doSave = true;
-                sdata.inactivityTimer = INACTIVITY_TIME;
-                continue;
+                pdata.apMode = false;
+                if (write_flash(&pdata) == false) {
+                    clearLog(HDR_ERROR);
+                    printHdr("Go STA mode to");
+                    printLog("ST mode failed");
+                    sleep_ms(3000);
+                    continue;
+                }
+                sleep_ms(3000);
+                watchdog_enable(1, 1);  // Reboot
+                while(1);;
+                /** NOT REACHED **/                
             }
 
             if (!gpio_get(JsOk)) {                  // Reset filter data (filter replaced)
@@ -730,7 +729,7 @@ void water_ctrl(void)
                 continue;
             }
 
-            if (!gpio_get(ResetButt)) {         // Reset total volume and restart this app
+            if (!gpio_get(ResetButt)) {         // Reset total volume
                 clearLog(HDR_ERROR);
                 printHdr("RESET");
                 DEV_SET_PWM(DEF_PWM);

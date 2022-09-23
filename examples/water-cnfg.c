@@ -383,7 +383,8 @@ void net_setconnection(bool mode)
 /**
  * Connect to AP
  */
-bool wifi_connect(char *ssid, char *pass, uint32_t country)
+#include "dhcpserver.h"
+bool wifi_connect(persistent_data *pdata)
 {
     int rval = 0;
     time_t retry;
@@ -396,67 +397,86 @@ bool wifi_connect(char *ssid, char *pass, uint32_t country)
 
     netIsConnected = nOFF;
 
-    ssid[SSID_MAX-1] = pass[PASS_MAX-1] = '\0';
+    pdata->ssid[SSID_MAX-1] = pdata->pass[PASS_MAX-1] = '\0';
 
-    if (!ssid[strspn(ssid, OKCHAR)] == '\0') {
-        printf("SSID (%s) contains illegal characters\n", ssid);
+    if (!pdata->ssid[strspn(pdata->ssid, OKCHAR)] == '\0') {
+        printf("SSID (%s) contains illegal characters\n", pdata->ssid);
         return netIsConnected;
     }
 
 
-    if (!pass[strspn(pass, OKCHAR)] == '\0') {
+    if (!pdata->pass[strspn(pdata->pass, OKCHAR)] == '\0') {
         printf("WPA2 password contains illegal characters\n");
         return netIsConnected;
     }
 
-    printf("Attempt connection to %s with pass %s and country code %lu\n", ssid, pass, country);
+    if ( pdata->apMode == false)
+        printf("Attempt connection to %s with pass %s and country code %lu\n", pdata->ssid, pdata->pass, pdata->country);
 
     if (partInit == false) {
 
-        if ((rval = cyw43_arch_init_with_country(country))) {
-            printf("\ncyw43_arch_init_with_country failed: %s/%d/%lu/%d\n", __FILENAME__, __LINE__, country, rval);
+        if ((rval = cyw43_arch_init_with_country(pdata->country))) {
+            printf("\ncyw43_arch_init_with_country failed: %s/%d/%lu/%d\n", __FILENAME__, __LINE__, pdata->country, rval);
             return netIsConnected;
         }
 
-        cyw43_arch_enable_sta_mode();
+        if ( pdata->apMode == true) {
+            ping_init(NULL);
+            goodPing = true;
+
+            cyw43_arch_enable_ap_mode(CYW43_HOST_NAME, APMODE_PASSWORD, CYW43_AUTH_WPA2_AES_PSK);
+            static ip4_addr_t gw, mask;
+            IP4_ADDR(&gw, 192, 168, 4, 1);
+            IP4_ADDR(&mask, 255, 255, 255, 0);
+
+            // Start the dhcp server
+            static dhcp_server_t dhcp_server;
+            dhcp_server_init(&dhcp_server, &gw, &mask);
+            printf("Initialized as AP %s, GW is 192.168.4.1, password: %s\n", CYW43_HOST_NAME, APMODE_PASSWORD);
+            //netIsConnected = nON;
+        } else {       
+            cyw43_arch_enable_sta_mode();
+        }
 
         /**
          * this seems to be the best be can do using the predefined `cyw43_pm_value` macro:
          * cyw43_wifi_pm(&cyw43_state, CYW43_PERFORMANCE_PM);
          * however it doesn't use the `CYW43_NO_POWERSAVE_MODE` value, so we do this instead:
          */
-        cyw43_wifi_pm(&cyw43_state, cyw43_pm_value(CYW43_NO_POWERSAVE_MODE, 20, 1, 1, 1));
+        //cyw43_wifi_pm(&cyw43_state, cyw43_pm_value(CYW43_NO_POWERSAVE_MODE, 20, 1, 1, 1));
 
         partInit = true;
     }
 
-    for (int i = 0; i < 3; i++) {
-        retry = time(NULL);
-        if ((rval = cyw43_arch_wifi_connect_timeout_ms(ssid, pass, CYW43_AUTH_WPA2_AES_PSK, CONNECTION_TMO))) {
-            //printf("\ncyw43_arch_wifi_connect_timeout_ms failed: %s/%d/%s/%d\n", __FILENAME__, __LINE__, ssid, rval);
-            switch (rval) {
-                case CYW43_LINK_NONET:      printf("No matching SSID found");       break;
-                case CYW43_LINK_BADAUTH:    printf("Authenticatation failure");     break;
-                case CYW43_LINK_FAIL:       printf("Link failure");                 break;
-                default: printf("Connection fail with return value = %d", rval);    break;
-            }
-            printf(" after %llu seconds. Timeout was set to %llus\n", time(NULL)-retry, CONNECTION_TMO/1000);
+    if ( pdata->apMode == false) {
+        for (int i = 0; i < 3; i++) {
+            retry = time(NULL);
+            if ((rval = cyw43_arch_wifi_connect_timeout_ms(pdata->ssid, pdata->pass, CYW43_AUTH_WPA2_AES_PSK, CONNECTION_TMO))) {
+                //printf("\ncyw43_arch_wifi_connect_timeout_ms failed: %s/%d/%s/%d\n", __FILENAME__, __LINE__, ssid, rval);
+                switch (rval) {
+                    case CYW43_LINK_NONET:      printf("No matching SSID found");       break;
+                    case CYW43_LINK_BADAUTH:    printf("Authenticatation failure");     break;
+                    case CYW43_LINK_FAIL:       printf("Link failure");                 break;
+                    default: printf("Connection fail with return value = %d", rval);    break;
+                }
+                printf(" after %llu seconds. Timeout was set to %llus\n", time(NULL)-retry, CONNECTION_TMO/1000);
 
-            if (rval < 0 && time(NULL) - retry < 4) {
-                printf("Retry %d/3\n", i+1);
-                sleep_ms(2000);
-            } else {
-                netIsConnected = nOFF;
+                if (rval < 0 && time(NULL) - retry < 4) {
+                    printf("Retry %d/3\n", i+1);
+                    sleep_ms(2000);
+                } else {
+                    netIsConnected = nOFF;
+                }
             }
-        }
-        if (rval == 0) {
-            char *gw;
-            printf("Got I.P adress %s for %s\n", ip4addr_ntoa(netif_ip4_addr(netif_list)), CYW43_HOST_NAME);
-            printf("Got gateway adress %s\n", (gw=ip4addr_ntoa(netif_ip4_gw(netif_list))));
-            goodPing = netIsConnected = nON;
-            ping_init(gw);  // Initialize the periodic ping function.
+            if (rval == 0) {
+                char *gw;
+                printf("Got I.P adress %s for %s\n", ip4addr_ntoa(netif_ip4_addr(netif_list)), CYW43_HOST_NAME);
+                printf("Got gateway adress %s\n", (gw=ip4addr_ntoa(netif_ip4_gw(netif_list))));
+                goodPing = netIsConnected = nON;
+                ping_init(gw);  // Initialize the periodic ping function.
 
-            break;
+                break;
+            }
         }
     }
 
@@ -632,19 +652,22 @@ static bool net_ntp(char *ntp_server)
 /**
  * User entry point for an NTP request
  */
-bool netNTP_connect(char *server)
+bool netNTP_connect(persistent_data *pdata)
 {
     bool rval = false;
     static char buf_ntp[URL_MAX+2];
     static bool isConnected;
 
+    if (pdata->apMode == true)
+        return true;
+
     if (netIsConnected == nON && isConnected == nOFF) {
 
-        if (!strncmp(server, "0.0.0.0", 7)) {
+        if (!strncmp(pdata->ntp_server, "0.0.0.0", 7)) {
             // Default gw host assumed to hold NTP services
             strncpy(buf_ntp, ip4addr_ntoa(netif_ip4_gw(netif_list)), sizeof(buf_ntp)-1);
         } else {
-            strncpy(buf_ntp, server, URL_MAX);
+            strcpy(buf_ntp, pdata->ntp_server);
         }
         if (net_ntp(buf_ntp) == false) {
             return rval;
@@ -1012,6 +1035,10 @@ void ping_send_now(void)
  */
 static void ping_init(const char *ip)
 {
+
+    if (ip == NULL)
+        return;
+
     static ip_addr_t no;
     ip4addr_aton(ip, &no);
     ping_target = &no;

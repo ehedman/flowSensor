@@ -22,7 +22,7 @@
 /*
  * The RTC hat is attached
  */
-//#define HAS_RTC
+#define HAS_RTC
 
 /**
  * For debugging
@@ -86,6 +86,7 @@ typedef struct p_data {
     float       version;
     time_t      rebootTime;
     int         rebootCount;
+    bool        apMode;
     uint32_t    idt;
 } persistent_data;
 
@@ -99,8 +100,8 @@ extern time_t   _time(time_t *tloc);
 
 #ifdef HAS_NET
 
-extern bool     netNTP_connect(char *server);
-extern bool     wifi_connect(char *ssid, char *pass, uint32_t country);
+extern bool     netNTP_connect(persistent_data *pdata);
+extern bool     wifi_connect(persistent_data *pdata);
 extern bool     net_checkconnection(void);
 extern void     net_setconnection(bool mode);
 extern void     ping_send_now(void);
@@ -111,9 +112,10 @@ extern bool     wifi_find(char *ap);
 #define PICO_CYW43_ARCH_THREADSAFE_BACKGROUND 1
 
 #define WIFI_COUNTRY    CYW43_COUNTRY_SWEDEN
-#define WIFI_SSID       "my-ap"
-#define WIFI_PASS       "password"
-#define NTP_SERVER      "time.google.com"                   // 0.0.0.0 = auto i.e assume DHCP host also is NTP server
+#define WIFI_SSID       "myAp"
+#define WIFI_PASS       "PASSWORD"
+#define NTP_SERVER      "time.google.com"       // 0.0.0.0 = auto i.e assume DHCP host also is NTP server
+#define APMODE_PASSWORD "digiflow"      // Static password for AP mode
 
 /**
  * OK chars for URLs and WiFi text properties
