@@ -1,10 +1,10 @@
 #ifndef _WATERCTRL_H_
 #define _WATERCTRL_H_
 
-#if __has_include("DigiFlow.h")
- #include "DigiFlow.h"
+#if __has_include("digiflow.h")
+ #include "digiflow.h"
 #else
- #error Run cmake to create DigiFlow.h
+ #error Run cmake to create digiflow.h
 #endif
 
 /** Eliminates compiler warning about unused arguments (GCC -Wextra -Wunused). */
@@ -108,13 +108,14 @@ extern void     ping_send_now(void);
 extern bool     ping_status(void);
 extern void     wifi_scan(int scanTurns);
 extern bool     wifi_find(char *ap);
+extern void     init_httpd(bool doIt);
 
 #define PICO_CYW43_ARCH_THREADSAFE_BACKGROUND 1
 
 #define WIFI_COUNTRY    CYW43_COUNTRY_SWEDEN
-#define WIFI_SSID       "myAp"
-#define WIFI_PASS       "PASSWORD"
-#define NTP_SERVER      "time.google.com"       // 0.0.0.0 = auto i.e assume DHCP host also is NTP server
+#define WIFI_SSID       "pegasus"
+#define WIFI_PASS       "090e0b0c0d"
+#define NTP_SERVER      "0.0.0.0"       // 0.0.0.0 = auto i.e assume DHCP host also is NTP server
 #define APMODE_PASSWORD "digiflow"      // Static password for AP mode
 
 /**

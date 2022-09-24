@@ -1,3 +1,0 @@
-// the configured options and settings for DigiFLow
-#define DigiFlow_VERSION_MAJOR @DigiFlow_VERSION_MAJOR@
-#define DigiFlow_VERSION_MINOR @DigiFlow_VERSION_MINOR@

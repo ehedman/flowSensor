@@ -39,6 +39,10 @@
 #include "dhcpserver.h"
 #include "lwip/udp.h"
 
+#include "water-ctrl.h"
+
+#ifdef HAS_NET
+
 #define DHCPDISCOVER    (1)
 #define DHCPOFFER       (2)
 #define DHCPREQUEST     (3)
@@ -296,3 +300,4 @@ void dhcp_server_init(dhcp_server_t *d, ip_addr_t *ip, ip_addr_t *nm) {
     }
     dhcp_socket_bind(&d->udp, 0, PORT_DHCP_SERVER);
 }
+#endif /* HAS_NET */

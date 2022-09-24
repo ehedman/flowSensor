@@ -342,13 +342,21 @@ time_t _time(time_t *tloc)
 
 #else /* HAS_RTC */
 
+#if defined COMPILE_TIME_EPOCH
+/*
+ * Remains as start time unless overwritten by a successful NTP action.
+ */
+static time_t volatile_epoch = COMPILE_TIME_EPOCH;
+#else
 static time_t volatile_epoch;
+#endif
+
 time_t _time(time_t *tloc)
 {
     APP_UNUSED_ARG(tloc);
 
     if (volatile_epoch == 0) {          // If not set yet
-        volatile_epoch = 1660411426;    // Fake time around Sat Aug 13 17:20 202
+        volatile_epoch = 1660411426;    // Fallback fake time around Sat Aug 13 17:20 202
     }
     return volatile_epoch +  TZ_RZONE + get_absolute_time()/1000000;
 }
@@ -433,7 +441,6 @@ bool wifi_connect(persistent_data *pdata)
             static dhcp_server_t dhcp_server;
             dhcp_server_init(&dhcp_server, &gw, &mask);
             printf("Initialized as AP %s, GW is 192.168.4.1, password: %s\n", CYW43_HOST_NAME, APMODE_PASSWORD);
-            //netIsConnected = nON;
         } else {       
             cyw43_arch_enable_sta_mode();
         }

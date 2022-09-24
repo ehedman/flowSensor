@@ -498,6 +498,11 @@ void water_ctrl(void)
     }
 #endif
 
+#if defined COMPILE_TIME_EPOCH
+    curtime = COMPILE_TIME_EPOCH;
+    printf("%s %.1f: Build: UTC %s", CYW43_HOST_NAME, pdata.version, ctime_r(&curtime, buffer_t));
+#endif
+
     sdata.startTime = curtime = time(NULL);
     printf("Current RTC time is %s", ctime_r(&curtime, buffer_t));
 
@@ -546,12 +551,15 @@ void water_ctrl(void)
 
         while (FlowFreq == 0.0) {
 
+            static int lostPing;
+
 #ifdef HAS_NET
             static int tryConnect;
             static int tryPing;
             static int pingInterval;
             static int tryScan;
-            static int lostPing;
+
+            DEV_SET_PWM(0); 
 
             if (pingInterval++ >= 20) {
                 ping_send_now();
@@ -602,20 +610,7 @@ void water_ctrl(void)
                 }
                 continue;
             }
-#else
-            sleep_ms(1000);
-#endif /* HAS_NET */
-            DEV_SET_PWM(0); 
 
-            if (doSave == true && delSave-- <= 0) { // Avoid repeated saves for rapid events
-                printf("Delayed save\n");
-                if (write_flash(&pdata) == false) {
-                    printf("Delayed save failed\n");
-                }
-                doSave = false;
-                delSave = 0;
-            }
-            
             if (!gpio_get(JsRight)) {   // Go AP mode
                 clearLog(HDR_INFO);
                 printHdr("Go AP mode");
@@ -652,6 +647,18 @@ void water_ctrl(void)
                 watchdog_enable(1, 1);  // Reboot
                 while(1);;
                 /** NOT REACHED **/                
+            }
+#else
+            sleep_ms(1000);
+#endif /* HAS_NET */
+
+            if (doSave == true && delSave-- <= 0) { // Avoid repeated saves for rapid events
+                printf("Delayed save\n");
+                if (write_flash(&pdata) == false) {
+                    printf("Delayed save failed\n");
+                }
+                doSave = false;
+                delSave = 0;
             }
 
             if (!gpio_get(JsOk)) {                  // Reset filter data (filter replaced)
