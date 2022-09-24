@@ -18,13 +18,15 @@ Marine water flow sensor and meter
 - WiFi connectivity management for AP and STA modes
     
 ### Environment
-- Linux Mint (Debian) platform for development
+- Linux Mint (Debian/Ubuntu) platform for development
 - The folder structure of this application follows the Waveshare SDK "Pico_code/c" structure. The free Waveshare libs are included here.
 
 ### Build
+- Install Pico SDK (if not installed already)
+- Install pico_extras (if not installed previousy) using the script preparePico-extras.sh
 - Alter the default WiFi credentials in ./examples/water-ctrl.h
 - mkdir build; cd build; PICO_BOARD=pico_w cmake  ..
-- make fsdata (make embedded file system to hold html index files etc.)
+- make fsdata (make embedded file system to hold html index files etc. Run each time html files has been changed)
 - make (to produce the executable main.uf2)
 - make install will install the main.uf2 into /media/(your logname)/RPI-RP2 assuming here that this folder is automounted when the Pico is set to "BOOTSEL" mode.
 - The hostname of this Pico W is set to DigiFlow, so it should be possible to surf in to the device referenced that name (+plus your domain name).
@@ -43,10 +45,10 @@ To folow the console output, attach a seral to USB dongle to the Picos' No 1 (ou
 ### External dependencies
 - ARM Cross delevopment tools for the Pico (apt install gcc-arm-none-eabi)
 - [Pico SDK](https://github.com/raspberrypi/pico-sdk)
-- [PIco SDK reference manual](https://datasheets.raspberrypi.org/pico/raspberry-pi-pico-c-sdk.pdf)
-- [Waveshare SDK](https://www.waveshare.com/w/upload/0/06/Pico-LCD-1.14.zip)
+- [Pico SDK reference manual](https://datasheets.raspberrypi.org/pico/raspberry-pi-pico-c-sdk.pdf)
+- [Pico Extras](https://github.com/raspberrypi/pico-extras)
 - [LwIP Lightweight IP stack](https://www.nongnu.org/lwip/2_1_x/index.html)
-- [krzmaz's blog](http://krzmaz.com/2022-08-15-creating-a-web-server-on-raspberry-pi-pico-w-using-pico-sdk-and-lwip)
+- [Waveshare SDK](https://www.waveshare.com/w/upload/0/06/Pico-LCD-1.14.zip)
 
 ### Screenshot
 [Check THIS out](https://www.hedmanshome.se/digiflow.html)
