@@ -15,14 +15,13 @@ Marine water flow sensor and meter
 - End of filter life alert
 - Automatic data memorised in flash
 - WiFi connectivity, NTP and HTTPD functions
-- WiFi connectivity management
+- WiFi connectivity management for AP and STA modes
     
 ### Environment
 - Linux Mint (Debian) platform for development
-- The folder structure of this application is ment to be added to the Waveshare SDK "Pico_code/c" folder structure.
+- The folder structure of this application follows the Waveshare SDK "Pico_code/c" structure. The free Waveshare libs are included here.
 
 ### Build
-Once integrated with the Waveshare build structure:
 - Alter the default WiFi credentials in ./examples/water-ctrl.h
 - mkdir build; cd build; PICO_BOARD=pico_w cmake  ..
 - make fsdata (make embedded file system to hold html index files etc.)
@@ -33,10 +32,11 @@ Once integrated with the Waveshare build structure:
 ### Test
 It is possible to test this app on a bare Pico W without the extra hats and just browse in to this device home page. In such case, disable the RTC define in the water-ctrl.h to get sane date timestamps.
 
-The first time this app is installed on a fresh Pico W, the pico will enter AP (Access Point) mode and from there it can be configured as a ordinary (STA) wifi node. The passord for AP mode is "digiflow"
-and the GW I.P is 192.168.4.1 to point your browsser to.
+The first time this app is installed on a fresh Pico W, the pico will enter AP (Access Point) mode and from there it can be configured as a ordinary (STA) wifi node. The passord for AP mode is "digiflow" and the GW I.P is 192.168.4.1 to point your browsser to.
 
-It is also possibe to switch between these modes by using display buttons. The AP mode is considered a "rescue" mode if the pico is somehow lost in the wifi universe.
+It is also possibe to switch between these modes by using the display (GPIO) buttons. The AP mode is considered a "rescue" mode if the pico is somehow lost in the wifi universe.
+
+It is possible to simulate a flow sensor by applying a 2.5 Volt square wave to GPIO(5) at a frequency between 1 to 110 Hz.
 
 To folow the console output, attach a seral to USB dongle to the Picos' No 1 (output)  pin.
 
