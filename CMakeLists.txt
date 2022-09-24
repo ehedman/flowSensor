@@ -1,10 +1,12 @@
 cmake_minimum_required(VERSION 3.13)
 include(pico_sdk_import.cmake)
 include(pico_extras_import.cmake)
-project(DigiFlow VERSION 1.0)
+project(DigiFlow VERSION 1.1)
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_CXX_STANDARD 17)
 pico_sdk_init()
+
+include_regular_expression("^.*(h|cpp|inl|inc)$")
 
 # Add a compilation subdirectory
 add_subdirectory(lib/Config)
@@ -20,14 +22,24 @@ include_directories(./lib/Config)
 include_directories(./lib/GUI)
 include_directories(./lib/LCD)
 
-configure_file(DigiFlow.h.in DigiFlow.h)
+configure_file(digiflow.h.in digiflow.h)
+configure_file(custom.h.in rtc.def)
 
 # Where the pico in BOOTSEL mode automounts on a (Mint) host
 set(UF2DESTINATION /media/$ENV{LOGNAME}/RPI-RP2)
 
+add_custom_target(dynDefines
+    DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/custom.cmake
+    )
+
+add_custom_command( 
+    TARGET dynDefines PRE_BUILD
+    COMMAND ${CMAKE_COMMAND} -P ${CMAKE_CURRENT_SOURCE_DIR}/custom.cmake
+    )
+
 # create an executable file
 add_executable(main
-main.c
+    main.c
 )
 
 # Set the network hostname for this Pico w
@@ -38,6 +50,8 @@ if (PICO_CYW43_SUPPORTED) # set by command 'PICO_BOARD=pico_w cmake  ..'
         message("Skipping Pico W support is not available")
     else()
         message("including Pico W support")
+
+        add_dependencies(main dynDefines)
 
         add_compile_definitions(CYW43_HOST_NAME="${HOSTNAME}")
         target_compile_definitions(examples PRIVATE CYW43_HOST_NAME="${HOSTNAME}")
@@ -60,6 +74,7 @@ if (PICO_CYW43_SUPPORTED) # set by command 'PICO_BOARD=pico_w cmake  ..'
             pico_cyw43_arch_lwip_threadsafe_background cyw43_driver_base pico_lwip_http)
     endif()
 else()
+    add_dependencies(main dynDefines)
     target_link_libraries(main
         examples LCD GUI Fonts Config pico_stdlib hardware_spi pico_multicore hardware_flash
         hardware_rtc hardware_clocks hardware_rosc hardware_sleep hardware_adc)
