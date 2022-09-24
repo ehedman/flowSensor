@@ -3,6 +3,9 @@
 # This can be dropped into an external project to help locate pico-extras
 # It should be include()ed prior to project()
 
+set(PICO_EXTRAS_PATH $ENV{PICO_SDK_PATH}/../pico_extras)
+set(LWIP_PATH $ENV{PICO_SDK_PATH}/lib/lwip)
+
 if (DEFINED ENV{PICO_EXTRAS_PATH} AND (NOT PICO_EXTRAS_PATH))
     set(PICO_EXTRAS_PATH $ENV{PICO_EXTRAS_PATH})
     message("Using PICO_EXTRAS_PATH from environment ('${PICO_EXTRAS_PATH}')")
@@ -26,14 +29,14 @@ if (NOT PICO_EXTRAS_PATH)
             get_filename_component(FETCHCONTENT_BASE_DIR "${PICO_EXTRAS_FETCH_FROM_GIT_PATH}" REALPATH BASE_DIR "${CMAKE_SOURCE_DIR}")
         endif ()
         FetchContent_Declare(
-                PICO_EXTRAS
+                pico_extras
                 GIT_REPOSITORY https://github.com/raspberrypi/pico-extras
                 GIT_TAG master
         )
-        if (NOT PICO_EXTRAS)
-            message("Downloading PICO EXTRAS")
-            FetchContent_Populate(PICO_EXTRAS)
-            set(PICO_EXTRAS_PATH ${PICO_EXTRAS_SOURCE_DIR})
+        if (NOT pico_extras)
+            message("Downloading Raspberry Pi Pico Extras")
+            FetchContent_Populate(pico_extras)
+            set(PICO_EXTRAS_PATH ${pico_extras_SOURCE_DIR})
         endif ()
         set(FETCHCONTENT_BASE_DIR ${FETCHCONTENT_BASE_DIR_SAVE})
     else ()
