@@ -1,13 +1,13 @@
 /*****************************************************************************
-* | File      	:   water-ctrl.c
+* | File      	:   water-cnfg.c
 * | Author      :   erland@hedmanshome.se
-* | Function    :   Messure water flow and filter properties.
+* | Function    :   Functions for water-ctrl.c
 * | Info        :   
-* | Depends     :   Rasperry Pi Pico W, Waveshare Pico LCD 1.14 V2, DS3231 piggy-back RTC module
+* | Depends     :   Rasperry Pi Pico W, LwIP, DS3231 piggy-back RTC module
 *----------------
-* |	This version:   V1.0
-* | Date        :   2022-08-22
-* | Info        :   Build context is within the Waveshare Pico SDK c/examples2
+* |	This version:   V1.1
+* | Date        :   2022-09-22
+* | Info        :   Build context is within the Waveshare Pico SDK c/examples
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documnetation files (the "Software"), to deal
@@ -53,6 +53,7 @@
 #include <lwip/udp.h>
 #include <lwip/tcp.h>
 #include <lwip/ip_addr.h>
+#include "dhcpserver.h"
 #endif
 
 #ifndef HAS_NET
@@ -391,7 +392,6 @@ void net_setconnection(bool mode)
 /**
  * Connect to AP
  */
-#include "dhcpserver.h"
 bool wifi_connect(persistent_data *pdata)
 {
     int rval = 0;
@@ -429,6 +429,7 @@ bool wifi_connect(persistent_data *pdata)
         }
 
         if ( pdata->apMode == true) {
+
             ping_init(NULL);
             goodPing = true;
 
@@ -441,6 +442,7 @@ bool wifi_connect(persistent_data *pdata)
             static dhcp_server_t dhcp_server;
             dhcp_server_init(&dhcp_server, &gw, &mask);
             printf("Initialized as AP %s, GW is 192.168.4.1, password: %s\n", CYW43_HOST_NAME, APMODE_PASSWORD);
+
         } else {       
             cyw43_arch_enable_sta_mode();
         }
@@ -487,7 +489,7 @@ bool wifi_connect(persistent_data *pdata)
         }
     }
 
-    return netIsConnected;
+    return netIsConnected;  // false in AP mode
 }
 
 /**

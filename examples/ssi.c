@@ -1,8 +1,39 @@
-
+/*****************************************************************************
+* | File      	:   water-ctrl.c
+* | Author      :   erland@hedmanshome.se
+* | Function    :   Construct the web page and handle form posts
+* | Info        :   
+* | Depends     :   Rasperry Pi Pico W and LwIP
+*----------------
+* |	This version:   V1.1
+* | Date        :   2022-09-22
+* | Info        :   Build context is within the Waveshare Pico SDK c/examples
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documnetation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to  whom the Software is
+# furished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in
+# all copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS OR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+# THE SOFTWARE.
+******************************************************************************/
 #include "ssi.h"
 
 #ifdef HAS_NET
 
+/*
+ * Let the CPP build the tag array
+ */
 const char * __not_in_flash("httpd") ssi_html_tags[] = {
     FOREACH_TAG(GENERATE_STRING)
 };
@@ -111,18 +142,18 @@ u16_t __time_critical_func(ssi_handler)(int iIndex, char *pcInsert, int iInsertL
         case WSCAN: // Scanned WiFi hosts
             printed = snprintf(pcInsert, iInsertLen, "%s", wscans);
         break;
+        case TRNS: // Do translation ?
+            printed = snprintf(pcInsert, iInsertLen, "%s", pdata.apMode == true? "" : TRNS_SCRIPT);
+        break;
+        case APM: // AP mode ?
+            printed = snprintf(pcInsert, iInsertLen, "%s", pdata.apMode == true? "1" : "0");
+        break;
         case NDBG: // Some debug data
 #ifdef NET_DEBUG
             printed = snprintf(pcInsert, iInsertLen, "%d,%d,%d,%d,%llu", sdata.lostPing, sdata.outOfPcb, pdata.rebootCount, httpdReq, pdata.rebootTime);
 #else
             printed = snprintf(pcInsert, iInsertLen, "false");
 #endif
-        break;
-        case TRNS: // Do translation ?
-            printed = snprintf(pcInsert, iInsertLen, "%s", pdata.apMode == true? "" : TRNS_SCRIPT);
-        break;
-        case APM: // AP mode ?
-            printed = snprintf(pcInsert, iInsertLen, "%s", pdata.apMode == true? "1" : "0");
         break;
         default:    // unknown tag
         printed = 0;
@@ -148,7 +179,7 @@ void init_httpd(bool doIt)
     }
 
     /**
-    * http_set_ssi_handler Parameters:
+    * http_set_ssi_handler Parameters:apMode
     *    ssi_handler	the SSI handler function
     *    tags	        an array of SSI tag strings to search for in SSI-enabled files
     *    num_tags	    number of tags in the 'tags' array

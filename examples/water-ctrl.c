@@ -3,10 +3,10 @@
 * | Author      :   erland@hedmanshome.se
 * | Function    :   Messure water flow and filter properties.
 * | Info        :   
-* | Depends     :   Rasperry Pi Pico W, Waveshare Pico LCD 1.14 V2, DS3231 piggy-back RTC module
+* | Depends     :   Rasperry Pi Pico W, LwIP, Waveshare Pico LCD 1.14 V2, DS3231 piggy-back RTC module
 *----------------
-* |	This version:   V1.0
-* | Date        :   2022-08-22
+* |	This version:   V1.1
+* | Date        :   2022-09-22
 * | Info        :   Build context is within the Waveshare Pico SDK c/examples
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -40,7 +40,7 @@
 #include "waterbcd.h"
 #include "water-ctrl.h"
 #ifdef HAS_NET
-#include "ssi.h"
+#include <pico/cyw43_arch.h>
 #endif /* HAS_NET */
 
 /**
@@ -499,6 +499,9 @@ void water_ctrl(void)
 #endif
 
 #if defined COMPILE_TIME_EPOCH
+#if !defined CYW43_HOST_NAME
+  #define CYW43_HOST_NAME "DigiFlow"
+#endif
     curtime = COMPILE_TIME_EPOCH;
     printf("%s %.1f: Build: UTC %s", CYW43_HOST_NAME, pdata.version, ctime_r(&curtime, buffer_t));
 #endif
