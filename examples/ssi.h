@@ -11,7 +11,7 @@
 #include <lwip/apps/httpd.h>
 #include <hardware/watchdog.h>
 
-/*
+/**
  * Plug in this when not in AP mode
  */
 #define TRNS_SCRIPT "<script src=\"https://translate.google.com/translate_a/element.js?cb=googleTranslateElementInit\"></script>"

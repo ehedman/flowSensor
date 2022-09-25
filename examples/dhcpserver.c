@@ -31,15 +31,11 @@
 #include <stdio.h>
 #include <string.h>
 #include <errno.h>
-
-#define PICO_CYW43_ARCH_THREADSAFE_BACKGROUND 1
-#define __FILENAME__ (strrchr(__FILE__, '/') ? strrchr(__FILE__, '/') + 1 : __FILE__)
-
+#include <pico/stdlib.h>
+#include "water-ctrl.h"
 #include "cyw43_config.h"
 #include "dhcpserver.h"
 #include "lwip/udp.h"
-
-#include "water-ctrl.h"
 
 #ifdef HAS_NET
 
@@ -183,9 +179,11 @@ static void dhcp_server_process(void *arg, struct udp_pcb *upcb, struct pbuf *p,
     (void)upcb;
     (void)src_addr;
     (void)src_port;
-    extern void init_httpd(bool doIt);
+    bool doHttpd = false;
 
-    printf("dhcp_server_process\n");
+#if defined NET_DEBUG
+    printf("dhcp_server_process: %s/%d/\n", __FILENAME__, __LINE__);
+#endif
 
     // This is around 548 bytes
     dhcp_msg_t dhcp_msg;
@@ -269,6 +267,7 @@ static void dhcp_server_process(void *arg, struct udp_pcb *upcb, struct pbuf *p,
             printf("DHCPS: client connected: MAC=%02x:%02x:%02x:%02x:%02x:%02x IP=%u.%u.%u.%u\n",
                 dhcp_msg.chaddr[0], dhcp_msg.chaddr[1], dhcp_msg.chaddr[2], dhcp_msg.chaddr[3], dhcp_msg.chaddr[4], dhcp_msg.chaddr[5],
                 dhcp_msg.yiaddr[0], dhcp_msg.yiaddr[1], dhcp_msg.yiaddr[2], dhcp_msg.yiaddr[3]);
+                doHttpd = true;
             break;
         }
 
@@ -285,7 +284,7 @@ static void dhcp_server_process(void *arg, struct udp_pcb *upcb, struct pbuf *p,
     *opt++ = DHCP_OPT_END;
     dhcp_socket_sendto(&d->udp, &dhcp_msg, opt - (uint8_t *)&dhcp_msg, 0xffffffff, PORT_DHCP_CLIENT);
 
-    init_httpd(true);
+    init_httpd(doHttpd);
 
 ignore_request:
     pbuf_free(p);

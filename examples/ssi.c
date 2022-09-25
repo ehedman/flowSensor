@@ -1,5 +1,5 @@
 /*****************************************************************************
-* | File      	:   water-ctrl.c
+* | File      	:   ssi.c
 * | Author      :   erland@hedmanshome.se
 * | Function    :   Construct the web page and handle form posts
 * | Info        :   
@@ -31,7 +31,7 @@
 
 #ifdef HAS_NET
 
-/*
+/**
  * Let the CPP build the tag array
  */
 const char * __not_in_flash("httpd") ssi_html_tags[] = {
@@ -179,13 +179,16 @@ void init_httpd(bool doIt)
     }
 
     /**
-    * http_set_ssi_handler Parameters:apMode
-    *    ssi_handler	the SSI handler function
-    *    tags	        an array of SSI tag strings to search for in SSI-enabled files
-    *    num_tags	    number of tags in the 'tags' array
-    */ 
+     * http_set_ssi_handler Parameters:apMode
+     *    ssi_handler	the SSI handler function
+     *    tags	        an array of SSI tag strings to search for in SSI-enabled files
+     *    num_tags	    number of tags in the 'tags' array
+     */ 
     http_set_ssi_handler(ssi_handler, ssi_html_tags, LWIP_ARRAYSIZE(ssi_html_tags));
 
+    /**
+     * Initialize the httpd: set up a listening PCB and bind it to the defined port
+     */
     httpd_init();
 
     printf("Http server initialized.\n");

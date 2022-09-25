@@ -598,11 +598,11 @@ void water_ctrl(void)
             if (tryScan++ > 24) {
                 memset(sdata.wfd, 0, sizeof(sdata.wfd));
                 sdata.ssidCount = 0;
-                wifi_scan(2);   // Fill wfd with fresh findings
+                wifi_scan(2, &sdata);   // Fill wfd with fresh findings
                 tryScan = 0;
             }
 
-            if (tryConnect++ >= 10 && net_checkconnection() == false && wifi_find(pdata.ssid) == true) {
+            if (tryConnect++ >= 10 && net_checkconnection() == false && wifi_find(pdata.ssid, &sdata) == true) {
                 tryConnect = 0;
 
                 if (wifi_connect(&pdata) == true) {

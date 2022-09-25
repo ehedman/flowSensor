@@ -697,33 +697,31 @@ bool netNTP_connect(persistent_data *pdata)
 
 /**
  * Callback for wifi_scan()
- * Populate sdata.wfd with unique host names and rssis
+ * Populate sdata->wfd[] with unique host names and rssis
  */
 static int scan_result(void *env, const cyw43_ev_scan_result_t *result)
 {
-
-    APP_UNUSED_ARG(env);
+    shared_data *sdata = env;
 
     int indx;
-    extern shared_data sdata; 
 
     if (result && result->ssid_len) {
 
-        for (indx=0; indx < sdata.ssidCount; indx++) {
-            if (strncmp((char *)result->ssid, sdata.wfd[indx].ssid, SSID_MAX) == 0)
+        for (indx=0; indx < sdata->ssidCount; indx++) {
+            if (strncmp((char *)result->ssid, sdata->wfd[indx].ssid, SSID_MAX) == 0)
                 break; // found duplicate
         }
 
-        if (sdata.ssidCount < SSID_LIST && indx == sdata.ssidCount) {
-            strncpy(sdata.wfd[sdata.ssidCount].ssid, (char *)result->ssid, SSID_MAX); // Add new
-            sprintf(sdata.wfd[sdata.ssidCount].rssi, "%ddBm", result->rssi);
-            sdata.ssidCount++;
+        if (sdata->ssidCount < SSID_LIST && indx == sdata->ssidCount) {
+            strncpy(sdata->wfd[sdata->ssidCount].ssid, (char *)result->ssid, SSID_MAX); // Add new
+            sprintf(sdata->wfd[sdata->ssidCount].rssi, "%ddBm", result->rssi);
+            sdata->ssidCount++;
         }
 #if 0
-        if (sdata.ssidCount) {
+        if (sdata->ssidCount) {
             printf("Results:\n");
-            for(int i=0; i < sdata.ssidCount; i++) {
-                printf("ssid: %s rssi: %s\n", sdata.wfd[i].ssid, sdata.wfd[i].rssi);
+            for(int i=0; i < sdata->ssidCount; i++) {
+                printf("ssid: %s rssi: %s\n", sdata->wfd[i].ssid, sdata->wfd[i].rssi);
             }
         }
 #endif
@@ -734,7 +732,7 @@ static int scan_result(void *env, const cyw43_ev_scan_result_t *result)
 /**
  * Scan the 2.4 MHz wifi network
  */
-void wifi_scan(int scanTurns)
+void wifi_scan(int scanTurns, shared_data *sdata)
 {
     absolute_time_t scan_test = nil_time;
     bool scan_in_progress = false;
@@ -743,7 +741,7 @@ void wifi_scan(int scanTurns)
         if (absolute_time_diff_us(get_absolute_time(), scan_test) < 0) {
             if (!scan_in_progress) {
                 cyw43_wifi_scan_options_t scan_options = {0};
-                int err = cyw43_wifi_scan(&cyw43_state, &scan_options, NULL, scan_result);
+                int err = cyw43_wifi_scan(&cyw43_state, &scan_options, sdata, scan_result);
                 if (err == 0) {
                     //printf("\nPerforming wifi scan\n");
                     scan_in_progress = true;
@@ -760,16 +758,15 @@ void wifi_scan(int scanTurns)
 }
 
 /**
- * Look up an AP in the air from a previosly wifi_scan() call
+ * Look up an AP in the air from a previosly completed wifi_scan() call
  */
-bool wifi_find(char *ap)
+bool wifi_find(char *ap, shared_data *sdata)
 {
     bool rval = false;
-    extern shared_data sdata; 
 
-    if (sdata.ssidCount) {
-        for(int i=0; i < sdata.ssidCount; i++) {
-            if (!strncmp(sdata.wfd[i].ssid, ap, strlen(ap))) {
+    if (sdata->ssidCount) {
+        for(int i=0; i < sdata->ssidCount; i++) {
+            if (!strncmp(sdata->wfd[i].ssid, ap, strlen(ap))) {
                 rval = true;
                 break;
             }

@@ -106,8 +106,8 @@ extern bool     net_checkconnection(void);
 extern void     net_setconnection(bool mode);
 extern void     ping_send_now(void);
 extern bool     ping_status(void);
-extern void     wifi_scan(int scanTurns);
-extern bool     wifi_find(char *ap);
+extern void     wifi_scan(int scanTurns, shared_data *sdata);
+extern bool     wifi_find(char *ap, shared_data *sdata);
 extern void     init_httpd(bool doIt);
 
 #define PICO_CYW43_ARCH_THREADSAFE_BACKGROUND 1
