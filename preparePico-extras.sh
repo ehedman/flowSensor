@@ -10,19 +10,18 @@ if [ ! -f "pico_extras_import.cmake" ]; then
     exit 1
 fi
 
-cd "${PICO_SDK_PATH}"/../
+if [ -z "${PICO_EXTRAS_PATH}" ]; then
+    PICO_EXTRAS_PATH="$(dirname "${PICO_SDK_PATH}")/pico_extras"
+fi
 
-if [ -d "pico_extras" ] || [ -L "pico-extras" ]; then
-    echo "$(pwd)/pico_extras appears to be installed already"
+if [ -d "${PICO_EXTRAS_PATH}" ]; then
+    echo "${PICO_EXTRAS_PATH} appears to be installed already"
     exit 0
 fi
 
-echo "Cloning from https://github.com/raspberrypi/pico-extras.git"
-git clone https://github.com/raspberrypi/pico-extras.git --branch sdk-1.3.1 --single-branch pico_extras &>/dev/null
-
-if [ "$?" -ne 0 ]; then
+if ! git clone https://github.com/raspberrypi/pico-extras.git --branch sdk-1.3.1 --single-branch "${PICO_EXTRAS_PATH}" &>/dev/null; then
     echo "Operation clone failed"
     exit 1
 fi
 
-ln -s pico_extras pico-extra
+echo "Pico extras installed at: ${PICO_EXTRAS_PATH}"
