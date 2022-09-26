@@ -26,6 +26,7 @@
     TAG(NTP)   \
     TAG(COU)   \
     TAG(TOTV)  \
+    TAG(GTOTV) \
     TAG(TNKV)  \
     TAG(FQV)   \
     TAG(FAGE)  \
