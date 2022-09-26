@@ -33,12 +33,10 @@
 #include <errno.h>
 #include <pico/stdlib.h>
 #include "water-ctrl.h"
+#ifdef HAS_NET
 #include "cyw43_config.h"
 #include "dhcpserver.h"
 #include "lwip/udp.h"
-
-#ifdef HAS_NET
-
 #define DHCPDISCOVER    (1)
 #define DHCPOFFER       (2)
 #define DHCPREQUEST     (3)
