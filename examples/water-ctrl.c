@@ -504,6 +504,8 @@ void water_ctrl(void)
     sdata.startTime = curtime = time(NULL);
     printf("Current RTC time is %s", ctime_r(&curtime, buffer_t));
 
+    sdata.totVolume = pdata.totVolume;  // sdata.totVolume used for live updates of ssi.html
+
     tmo = 3;
 
     while (1) {
@@ -520,6 +522,7 @@ void water_ctrl(void)
                 printf("FlowFreq=%dHz\n", FlowFreq);
                 printLog("FLOW=%.1f L/M", litreMinute);
                 printLog("USED=%.0f L", sessLitre + pdata.totVolume);
+                sdata.totVolume = sessLitre + pdata.totVolume;
                 DEV_SET_PWM(DEF_PWM);
 
             } else if (tmo-- <= 0) {
@@ -540,7 +543,7 @@ void water_ctrl(void)
         printf("Enter power save mode\n");
 
         if (sessLitre > 0.0) {
-            pdata.totVolume += sessLitre;
+            sdata.totVolume = pdata.totVolume += sessLitre;
             pdata.gtotVolume += sessLitre;
             pdata.filterVolume += sessLitre;
             sessLitre = sessTick = 0;

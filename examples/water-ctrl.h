@@ -71,6 +71,7 @@ typedef struct s_data {
     int     versioMajor;
     int     versionMinor;
     int     ssidCount;
+    float   totVolume;
     char    versionString[20];
     w_data  wfd[SSID_LIST];
 } shared_data;

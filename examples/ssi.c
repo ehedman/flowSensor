@@ -104,7 +104,7 @@ u16_t __time_critical_func(ssi_handler)(int iIndex, char *pcInsert, int iInsertL
             printed = snprintf(pcInsert, iInsertLen, "%lu", pdata.country);
         break;
         case TOTV:  // Total consumed volume
-            printed = snprintf(pcInsert, iInsertLen, "%.0f", pdata.totVolume);
+            printed = snprintf(pcInsert, iInsertLen, "%.0f", sdata.totVolume);
         break;
         case GTOTV: // Grand Total volume consumed
             printed = snprintf(pcInsert, iInsertLen, "%.0f", pdata.gtotVolume);

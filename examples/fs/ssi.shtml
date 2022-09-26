@@ -170,6 +170,19 @@
 
     const amonth = 2628288;
 
+    function loadXMLDoc() {
+        var xhttp = new XMLHttpRequest();
+        xhttp.onreadystatechange = function() {
+            if (this.readyState == 4 && this.status == 200) {
+                document.getElementById("totv").value = parseInt(this.responseText, 10);
+                update_vols();
+            }
+        };
+        xhttp.open("GET", "totv_dyn.shtml", true);
+        xhttp.send();
+    }
+
+
     function upd_country(obj)
     {
         if (obj.options[obj.selectedIndex].text == "Select new")
@@ -300,7 +313,7 @@
         document.getElementById("totv").title = "Volume left " + vleft + "%";
         document.getElementById("tnkv").title = "Volume left " + vleft + "%";
         document.getElementById("remv").title = "Volume left " + vleft + "%";
-        document.getElementById("remv").value = tnkv - totv; 
+        document.getElementById("remv").value = tnkv - totv;
     }
 
     function init()
@@ -427,6 +440,9 @@
 <input type="hidden" id="wifiscans" value="<!--#WSCAN-->">
 <input type="hidden" name="apm" id="apMode" value="<!--#APM-->">
 <input type="hidden" id="net_debug" value="<!--#NDBG-->">
+
+<script>setInterval(function () {loadXMLDoc();}, 2000);</script>
+
 <table>
     <tr>
         <th class="theader">Properties</th>
