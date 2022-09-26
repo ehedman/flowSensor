@@ -56,4 +56,7 @@ To folow the console output, attach a seral to USB dongle to the Picos' No 1 (ou
 <img src="https://hedmanshome.se/digi242-10.png" width=100%></br>
 <img src="https://hedmanshome.se/digi242-21.png" width=100%></br>
 
+### The main components
+<img src="https://hedmanshome.se/wpic1.jpg" width=100%></br>
+<img src="https://hedmanshome.se/wpic2.jpg" width=100%></br>
     
