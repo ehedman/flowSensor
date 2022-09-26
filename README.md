@@ -50,6 +50,9 @@ To folow the console output, attach a seral to USB dongle to the Picos' No 1 (ou
 - [LwIP Lightweight IP stack](https://www.nongnu.org/lwip/2_1_x/index.html)
 - [Waveshare SDK](https://www.waveshare.com/w/upload/0/06/Pico-LCD-1.14.zip)
 
+### Future ideas 
+- Add TDS sensor support (Water Quality Meter)
+
 ### Screenshot
 [Check THIS out](https://www.hedmanshome.se/digiflow.html)
 
