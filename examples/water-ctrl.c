@@ -44,12 +44,6 @@
 #endif /* HAS_NET */
 
 /**
- * For debug purposes this app enters flash
- * mode when the reset button is pressed.
- */
-#define FLASHMODE true
-
-/**
  * Monitor the HALL sensor run state by frequency measurement.
  */
 #include <hardware/pwm.h>
@@ -460,6 +454,7 @@ void water_ctrl(void)
 #endif /* HAS_NET */
         pdata.tankVolume = TANK_VOLUME;
         pdata.totVolume = 0.0;
+        pdata.gtotVolume = 0.0;
         pdata.filterVolume = 0.0;
         pdata.filterAge = time(NULL) + SDAY;
         pdata.sensFq = SENS_FQC;
@@ -546,6 +541,7 @@ void water_ctrl(void)
 
         if (sessLitre > 0.0) {
             pdata.totVolume += sessLitre;
+            pdata.gtotVolume += sessLitre;
             pdata.filterVolume += sessLitre;
             sessLitre = sessTick = 0;
             delSave = 120;  // Assuming reuse anytime soon
@@ -664,7 +660,7 @@ void water_ctrl(void)
                 delSave = 0;
             }
 
-            if (!gpio_get(JsOk)) {                  // Reset filter data (filter replaced)
+            if (!gpio_get(JsOk)) {                  // Reset filter data  andvolume (filter replaced)
                 clearLog(HDR_INFO);
                 printHdr("NEW FILTER");
                 printLog("New period");

@@ -545,9 +545,15 @@
     </tr>
 
     <tr>
-        <td><label for="totv">Total Volume used</label></td>
-        <td><input type="number"  min="1" title="In Litres" id="totv" name="totv" oninput="validity.valid||(value='');" onchange="update_vols()" value="<!--#TOTV-->"></td>
-        <td>Volume consumed</td>
+        <td><label for="totv">Volume used</label></td>
+        <td><input type="number"  min="0" title="In Litres" id="totv" name="totv" oninput="validity.valid||(value='');" onchange="update_vols()" value="<!--#TOTV-->"></td>
+        <td>Volume currently consumed</td>
+    </tr>
+
+    <tr>
+        <td><label for="gtotv">Grand total Volume used</label></td>
+        <td><input type="number"  min="0" title="In Litres" id="gtotv" name="gtotv" oninput="validity.valid||(value='');" value="<!--#GTOTV-->"></td>
+        <td title="Adjust/Restore manually here" >Total volume consumed</td>
     </tr>
 
     <tr>

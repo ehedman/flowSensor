@@ -22,12 +22,23 @@
 /*
  * The RTC hat is attached
  */
-#define HAS_RTC
+//#define HAS_RTC
 
 /**
  * For debugging
  */
 #define __FILENAME__ (strrchr(__FILE__, '/') ? strrchr(__FILE__, '/') + 1 : __FILE__)
+
+/**
+ * For debug purposes this app enters flash
+ * mode when the reset button is pressed.
+ */
+#define FLASHMODE true
+
+/**
+ * Add some debug output
+ */
+#define NET_DEBUG
 
 /**
  * For net status
@@ -79,10 +90,11 @@ typedef struct p_data {
     char        ntp_server[URL_MAX+2];
     uint32_t    country;
     float       totVolume;
+    float       gtotVolume;
     float       tankVolume;
+    float       filterVolume;
     float       sensFq;
     time_t      filterAge;
-    float       filterVolume;
     float       version;
     time_t      rebootTime;
     int         rebootCount;
@@ -129,7 +141,6 @@ extern void     init_httpd(bool doIt);
 #define MAX_BAD_PCBS    4
 #define MAX_BAD_PINGS   20
 #define NET_SANITY_CHECK     // Undef this if tcp_in-c.patch is not applied
-#define NET_DEBUG
 
 #endif /* HAS_NET */
 

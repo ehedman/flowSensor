@@ -106,6 +106,9 @@ u16_t __time_critical_func(ssi_handler)(int iIndex, char *pcInsert, int iInsertL
         case TOTV:  // Total consumed volume
             printed = snprintf(pcInsert, iInsertLen, "%.0f", pdata.totVolume);
         break;
+        case GTOTV: // Grand Total volume consumed
+            printed = snprintf(pcInsert, iInsertLen, "%.0f", pdata.gtotVolume);
+        break;
         case TNKV:  // Tank volume
             printed = snprintf(pcInsert, iInsertLen, "%.0f", pdata.tankVolume);
         break;
@@ -342,17 +345,18 @@ err_t httpd_post_receive_data(void *connection, struct pbuf *p)
                     //printf("(%d)param=%s\n", indx, dec);
 
                     switch (indx) {
-                        case SSID: strcpy(pdata.ssid, dec);                 break;
-                        case PASS: strcpy(pdata.pass, dec);                 break;
-                        case NTP:  strcpy(pdata.ntp_server, dec);           break;
-                        case COU:  pdata.country = (float)atol(dec);        break;
-                        case TOTV: pdata.totVolume = (float)atof(dec);      break;
-                        case TNKV: pdata.tankVolume = (float)atof(dec);     break;
-                        case FQV:  pdata.sensFq = (float)atof(dec);         break;
-                        case FAGE: pdata.filterAge = (float)atol(dec);      break;
-                        case FVOL: pdata.filterVolume = (float)atof(dec);   break;
-                        case APM:  apMode = atoi(dec);                      break;
-                        default: /* unknown/ignored tag */                  break;
+                        case SSID:  strcpy(pdata.ssid, dec);                 break;
+                        case PASS:  strcpy(pdata.pass, dec);                 break;
+                        case NTP:   strcpy(pdata.ntp_server, dec);           break;
+                        case COU:   pdata.country = (float)atol(dec);        break;
+                        case TOTV:  pdata.totVolume = (float)atof(dec);      break;
+                        case GTOTV: pdata.gtotVolume = (float)atof(dec);     break;
+                        case TNKV:  pdata.tankVolume = (float)atof(dec);     break;
+                        case FQV:   pdata.sensFq = (float)atof(dec);         break;
+                        case FAGE:  pdata.filterAge = (float)atol(dec);      break;
+                        case FVOL:  pdata.filterVolume = (float)atof(dec);   break;
+                        case APM:   apMode = atoi(dec);                      break;
+                        default:    /* unknown/ignored tag */                break;
                     }      
                 }
             }      
