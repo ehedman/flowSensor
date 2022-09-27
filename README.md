@@ -54,7 +54,7 @@ To folow the console output, attach a seral to USB dongle to the Picos' No 1 (ou
 - Add TDS sensor support (Water Quality Meter)
 
 ### Screenshot
-[Check THIS out](https://www.hedmanshome.se/digiflow.html)
+[Check THIS out](https://www.hedmanshome.se/digiflow-1.html)
 
 <img src="https://hedmanshome.se/digi242-10.png" width=100%></br>
 <img src="https://hedmanshome.se/digi242-21.png" width=100%></br>
