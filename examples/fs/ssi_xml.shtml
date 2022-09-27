@@ -1,0 +1,11 @@
+<waterctrl>
+    <hostname>
+        <!--#HNAME-->
+    </hostname>
+    <time>
+        <!--#CURTM-->
+    </time>
+    <totv>
+        <!--#TOTV-->
+    </totv>
+</waterctrl>

@@ -170,15 +170,40 @@
 
     const amonth = 2628288;
 
-    function loadXMLDoc() {
+    function loadXMLDoc()
+    {
+        var totvPo  = 0.0;
+        var totvObj = document.getElementById("totv");
+        var totvPr  = parseInt(totvObj.value, 10);
+        var gtotv   = parseInt(document.getElementById("gtotv").value, 10);
+        var fvol    = parseInt(document.getElementById("fvol").value, 10);
+
         var xhttp = new XMLHttpRequest();
-        xhttp.onreadystatechange = function() {
-            if (this.readyState == 4 && this.status == 200) {
-                document.getElementById("totv").value = parseInt(this.responseText, 10);
-                update_vols();
+
+        xhttp.onreadystatechange = function()
+        {
+            if (this.readyState == 4 && this.status == 200)
+            {
+                parser = new DOMParser();
+                xmlDoc = parser.parseFromString(this.responseText,"text/xml");
+                var hostname = xmlDoc.getElementsByTagName("hostname")[0].childNodes[0].nodeValue;
+                var time = xmlDoc.getElementsByTagName("time")[0].childNodes[0].nodeValue;
+                totvPo = totvObj.value = parseInt(xmlDoc.getElementsByTagName("totv")[0].childNodes[0].nodeValue);
+
+                if (totvPo > totvPr) {
+                    update_vols();
+
+                    gtotv += totvPo - totvPr;
+                    fvol  += totvPo - totvPr;
+
+                    document.getElementById("gtotv").value = gtotv;
+                    document.getElementById("fvol").value = fvol;
+                }
+                
+                document.getElementById("h3header").innerHTML = hostname + " " + time;
             }
         };
-        xhttp.open("GET", "totv_dyn.shtml", true);
+        xhttp.open("GET", "ssi_xml.shtml", true);
         xhttp.send();
     }
 
@@ -427,7 +452,8 @@
 
 <div class="content">
 
-<h3 style="margin: 6px;"><!--#HNAME--> <!--#CURTM-->
+<h3>
+    <span translate="no" id="h3header"><!--#HNAME--> <!--#CURTM--></span>
     <button id="trButt" type="button" onclick="googleTranslateElementInit(true)">Translate</button>
 </h3>
 
@@ -440,8 +466,6 @@
 <input type="hidden" id="wifiscans" value="<!--#WSCAN-->">
 <input type="hidden" name="apm" id="apMode" value="<!--#APM-->">
 <input type="hidden" id="net_debug" value="<!--#NDBG-->">
-
-<script>setInterval(function () {loadXMLDoc();}, 2000);</script>
 
 <table>
     <tr>
@@ -636,6 +660,11 @@
 <p>&sup1; Reboot required.<br>
 Changing any of the SSID, Password or Country Code parameters will result a lost connection the next time this device is
 rebooted. You then have to regain the connection by joining your host to that new AP WiFi network.</p>
+
+<script>
+    setInterval(function () {loadXMLDoc();}, 2000);
+</script>
+
 </div>
 </body>
 </html>
