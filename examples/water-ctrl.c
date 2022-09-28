@@ -425,7 +425,6 @@ void water_ctrl(void)
     static char buffer_t[60];
     float volTick = 0.0;
     float sessLitre = 0.0;
-    float litreMinute = 0.0;
     int delSave = 0;
     bool doSave = false;
     int tmo;
@@ -504,24 +503,32 @@ void water_ctrl(void)
     sdata.startTime = curtime = time(NULL);
     printf("Current RTC time is %s", ctime_r(&curtime, buffer_t));
 
-    sdata.totVolume = pdata.totVolume;  // sdata.totVolume used for live updates of ssi.html
+    sdata.totVolume = pdata.totVolume;
 
     tmo = 3;
 
     while (1) {
 
+        float used = pdata.totVolume;
+
         while(1) {
 
             volTick = (1.0/60)/pdata.sensFq;    // sensFq can be updated from web. Re-evaluate here.
 
-            if (FlowFreq > 0.0) {
-                litreMinute = (FlowFreq * 1 / pdata.sensFq);
+            if (FlowFreq > 1.0) {
+                sdata.flowRate = (FlowFreq * 1 / pdata.sensFq);
                 sessLitre = (sessTick * volTick);
+                used = sessLitre + pdata.totVolume;
+                if (used >= pdata.tankVolume) {
+                    used = pdata.tankVolume;
+                    sessLitre = 0;
+                }
                 clearLog(HDR_OK);
                 printHdr("Flowing");
                 printf("FlowFreq=%dHz\n", FlowFreq);
-                printLog("FLOW=%.1f L/M", litreMinute);
-                printLog("USED=%.0f L", sessLitre + pdata.totVolume);
+                printLog("FLOW=%.1fL/M", sdata.flowRate);
+                printLog("USED=%.0fL", used);
+                printLog("REM=%.0fL", pdata.tankVolume - used);
                 sdata.totVolume = sessLitre + pdata.totVolume;
                 DEV_SET_PWM(DEF_PWM);
 
@@ -530,9 +537,10 @@ void water_ctrl(void)
                 strftime(buffer_t, sizeof(buffer_t), "%d/%m/%y", info_t);
                 clearLog(HDR_INFO);
                 printHdr("No FLow");
-                printLog("USE=%.0fL", pdata.totVolume + sessLitre);
-                printLog("REM=%.0fL", pdata.tankVolume - (pdata.totVolume + sessLitre));
+                printLog("USED=%.0fL", used);
+                printLog("REM=%.0fL", pdata.tankVolume - used);
                 printLog("FXD=%s", buffer_t);
+                sleep_ms(2000);
                 break;
             }
             sleep_ms(2000);
@@ -542,11 +550,16 @@ void water_ctrl(void)
 
         printf("Enter power save mode\n");
 
-        if (sessLitre > 0.0) {
-            sdata.totVolume = pdata.totVolume += sessLitre;
+        if (used > 0.0) {
+            if (used >= pdata.tankVolume) {
+                pdata.totVolume = pdata.tankVolume;  // > Should not happen, adjust Q.
+                sessLitre = 0;
+            } else pdata.totVolume += sessLitre;
+
+            sdata.totVolume = pdata.totVolume;
             pdata.gtotVolume += sessLitre;
             pdata.filterVolume += sessLitre;
-            sessLitre = sessTick = 0;
+            sdata.flowRate = sessLitre = sessTick = 0;
             delSave = 120;  // Assuming reuse anytime soon
             doSave = true;  // .. so don't be to agressive to save to flash
         }

@@ -936,13 +936,15 @@ static void ping_send(struct raw_pcb *raw, const ip_addr_t *addr)
     struct pbuf *p;
     struct icmp_echo_hdr *iecho;
     size_t ping_size = sizeof(struct icmp_echo_hdr) + PING_DATA_SIZE;
+
+#if defined NET_DEBUG
     static int seq;
-
-    goodPing = false;
-
     // ESC[2K\r = erase line and return cursor
     printf("%c[2K\r(%d)ping %s with timeout %.1fs. ", 0x1b, ++seq, ip4addr_ntoa(addr), (float)PING_DELAY/1000);
     fflush(stdout);
+#endif
+
+    goodPing = false;
 
     LWIP_ASSERT("ping_size <= 0xffff", ping_size <= 0xffff);
 
@@ -993,8 +995,10 @@ static u8_t ping_recv(void *arg, struct raw_pcb *pcb, struct pbuf *p, const ip_a
             pbuf_free(p);
             goodPing = true;
             sys_untimeout(ping_timeout, pcb);
+#if defined NET_DEBUG
             printf("Got good ping.\r");
             fflush(stdout);
+#endif
 
             return 1; // eat the packet
         }
