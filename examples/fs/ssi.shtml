@@ -132,6 +132,7 @@
         float: right;
         font-size: inherit;
         background: inherit;
+        width:80px;
     }
     
     #trButt, #google_translate_element  {
@@ -695,10 +696,10 @@
  
 </table>
 <br>
-<input type="submit" class="submit" value="Submit" title="Save changes" style="float: right;">
+<input type="submit" class="submit" value="Submit" title="Save changes">
 </form>
 
-<div style="float: right; display: none;" id="apmDiv"><input type="checkbox" id="apmCheck">Leave AP mode on submit&nbsp;&nbsp;&nbsp;</div>
+<div style="float: right; display: none;" id="apmDiv"><input type="checkbox" style="width: 20px;" id="apmCheck">Leave AP mode on submit&nbsp;&nbsp;&nbsp;</div>
 
 <button type="button" title="Undo changes" onclick="location.reload(true)">Refresh</button>
 

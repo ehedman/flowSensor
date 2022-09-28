@@ -22,12 +22,12 @@
 /*
  * The RTC hat is attached
  */
-//#define HAS_RTC
+#define HAS_RTC
 
 /**
  * An Gravity TDS meter is attached to GPIO 26
  */
-//#define HAS_TDS
+#define HAS_TDS
 
 /**
  * For debugging
@@ -43,7 +43,7 @@
 /**
  * Add some debug output
  */
-#define NET_DEBUG
+//#define NET_DEBUG
 
 /**
  * For net status
