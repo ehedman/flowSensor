@@ -112,6 +112,18 @@
         background: white;
     }
 
+    .tdsTr {
+        display : none;
+    }
+
+    #tdsDiv {
+        border: 1px solid black;
+        width: 50%;
+        background: white;
+        padding: 1px;
+        padding-left: 2px;
+    }
+
     .submit {
         float: right;
         font-size: inherit;
@@ -170,6 +182,14 @@
 
     const amonth = 2628288;
 
+    function setColor(value, obj)
+    {
+        var hue = ((1 - value) * 120).toString(10);
+        var color = ["hsl(", hue, ",100%,50%)"].join("");
+
+        obj.style.backgroundColor = color;
+    }
+
     function loadXMLDoc() 
     {
         var totvPo  = 0.0;
@@ -178,6 +198,7 @@
         var gtotv   = parseInt(document.getElementById("gtotv").value, 10);
         var fvol    = parseInt(document.getElementById("fvol").value, 10);
         var tnkv    = parseInt(document.getElementById("tnkv").value, 10);
+        var tdsObj  = document.getElementById("tdsDiv");
 
         var xhttp = new XMLHttpRequest();
 
@@ -189,6 +210,7 @@
                 xmlDoc = parser.parseFromString(this.responseText,"text/xml");
                 var flrt = parseFloat(xmlDoc.getElementsByTagName("flrt")[0].childNodes[0].nodeValue);
                 totvPo = parseInt(xmlDoc.getElementsByTagName("totv")[0].childNodes[0].nodeValue);
+                tds = xmlDoc.getElementsByTagName("tds")[0].childNodes[0].nodeValue;
 
                 if (totvPo > totvPr && totvPr <= tnkv && flrt > 0.0) {
 
@@ -209,6 +231,14 @@
                 var time = xmlDoc.getElementsByTagName("time")[0].childNodes[0].nodeValue;
                 var fl = flrt >0.0? "  flowrate now: " + flrt + " L/M": "";
                 document.getElementById("h3header").innerHTML = hostname + " " + time + fl;
+                if (tds.trim() !== "0") {          
+                    var cell = document.getElementsByClassName("tdsTr"); 
+                    cell[0].style.display = "table-cell";
+                    cell[1].style.display = "table-cell";
+                    cell[2].style.display = "table-cell";
+                    setColor(parseInt(tds.trim())/600, tdsObj);
+                    tdsObj.innerHTML = tds + "ppm";
+                }
             }
         };
         xhttp.open("GET", "ssi_xml.shtml", true);
@@ -343,7 +373,7 @@
         if (totv >= tnkv)
             document.getElementById("totv").value = totv = tnkv;
         var vleft = Math.round(((tnkv-totv)/tnkv)*100);
-        //document.getElementById("totv").title = "Volume left " + vleft + "%";
+        document.getElementById("totv").title = "Volume left " + vleft + "%";
         document.getElementById("tnkv").title = "Volume left " + vleft + "%";
         document.getElementById("remv").title = "Volume left " + vleft + "%";
         document.getElementById("remv").value = tnkv - totv;
@@ -608,6 +638,12 @@
         <td><label for="tnkv">Tank Volume</label></td>
         <td><input type="number" min="1" title="In Litres" id="tnkv" name="tnkv" oninput="validity.valid||(value='');" onchange="update_vols()" value="<!--#TNKV-->"></td>
         <td>Water Tank capacity</td>
+    </tr>
+
+    <tr>
+        <td class="tdsTr"><label for="tdsDiv">TDS Value</label></td>
+        <td class="tdsTr"><div id="tdsDiv"><!--#TDS--></div></td>
+        <td class="tdsTr" title="150-300: Good/Fair: 300+ Poor">Water Quality</td>
     </tr>
 
     <tr>

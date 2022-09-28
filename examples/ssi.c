@@ -124,6 +124,9 @@ u16_t __time_critical_func(ssi_handler)(int iIndex, char *pcInsert, int iInsertL
         case FLRT:  // Flow rate
             printed = snprintf(pcInsert, iInsertLen, "%.1f", sdata.flowRate);
         break;
+        case TDS:  // TDS value
+            printed = snprintf(pcInsert, iInsertLen, "%.0f", sdata.tdsValue);
+        break;
         case VERS:  // Program version
             printed = snprintf(pcInsert, iInsertLen, "%.1f", pdata.version);
         break;

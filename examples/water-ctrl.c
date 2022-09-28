@@ -35,6 +35,7 @@
 #include <pico/stdlib.h>
 #include <pico/bootrom.h>
 #include <hardware/watchdog.h>
+#include <hardware/adc.h>
 #include "EPD_Test.h"
 #include "LCD_1in14.h"
 #include "waterbcd.h"
@@ -110,6 +111,13 @@ static const uint8_t dWakeUpPin =   4;
  */
 static const uint HzmeasurePin =    5;  // Square wave 1-110Hz
 static uint16_t FlowFreq =          0;  // Live flow frequency
+
+/**
+ * ADC TDS sensing
+ */
+static const uint8_t adcPin =       26;
+// 12-bit conversion, assume max value == ADC_VREF == 3.3 V
+static const float adcConvFactor =  3.3f / (1 << 12);
 
 /**
  * Session tick counter from the HAL sensor.
@@ -284,7 +292,11 @@ static void gpioInit(void)
         gpio_init(ResetButt);
         gpio_set_dir(ResetButt, GPIO_IN);
         gpio_pull_up(ResetButt);
-
+#if defined HAS_TDS
+        adc_init();
+        adc_gpio_init(adcPin);
+        adc_select_input(0);
+#endif
 }
 
 /**
@@ -354,6 +366,23 @@ static void core1Thread(void)
     }
 
 }
+
+#if defined HAS_TDS
+#define TdsFactor 0.5  // tds = ec / 2
+static float tdsConvert(float adcVolt)
+{
+
+    float kValue = 1.0;
+    float temperature = 25.0;
+
+    float voltage = adcVolt;
+	float ecValue=(133.42*voltage*voltage*voltage - 255.86*voltage*voltage + 857.39*voltage)*kValue;
+	float ecValue25 = ecValue / (1.0+0.02*(temperature-25.0));  //temperature compensation
+	float tdsValue = ecValue25 * TdsFactor;
+
+    return (tdsValue);
+}
+#endif
 
 /**
  * Main control loop.
@@ -530,6 +559,9 @@ void water_ctrl(void)
                 printLog("USED=%.0fL", used);
                 printLog("REM=%.0fL", pdata.tankVolume - used);
                 sdata.totVolume = sessLitre + pdata.totVolume;
+#if defined HAS_TDS
+                sdata.tdsValue = tdsConvert(adc_read() * adcConvFactor);
+#endif
                 DEV_SET_PWM(DEF_PWM);
 
             } else if (tmo-- <= 0) {
@@ -706,7 +738,12 @@ void water_ctrl(void)
                 info_t = localtime(&pdata.filterAge);
                 strftime(buffer_t, sizeof(buffer_t), "%d/%m/%y", info_t);
                 printLog("FXD=%s", buffer_t);
+#if defined HAS_TDS
+
+                printLog("TDS=%.0fppm", sdata.tdsValue);
+#else
                 printLog("FLV=%.0fL", pdata.filterVolume);
+#endif
                 DEV_SET_PWM(DEF_PWM);
                 sleep_ms(10000);
 

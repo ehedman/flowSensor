@@ -44,6 +44,7 @@
 #include <hardware/rosc.h>
 #include <hardware/watchdog.h>
 #include <hardware/structs/scb.h>
+#include <hardware/adc.h>
 #include "water-ctrl.h"
 #ifdef HAS_NET
 #include <pico/cyw43_arch.h>

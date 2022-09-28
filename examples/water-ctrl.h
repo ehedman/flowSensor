@@ -25,6 +25,11 @@
 //#define HAS_RTC
 
 /**
+ * An Gravity TDS meter is attached to GPIO 26
+ */
+//#define HAS_TDS
+
+/**
  * For debugging
  */
 #define __FILENAME__ (strrchr(__FILE__, '/') ? strrchr(__FILE__, '/') + 1 : __FILE__)
@@ -73,6 +78,7 @@ typedef struct s_data {
     int     ssidCount;
     float   totVolume;
     float   flowRate;
+    float   tdsValue;
     char    versionString[20];
     w_data  wfd[SSID_LIST];
 } shared_data;
