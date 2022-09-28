@@ -82,6 +82,10 @@
     td:nth-child(2) {
         width: 40%;
     }
+
+    input {
+        width: 206px;
+    }
     
     .theader {
         padding-top: 4px;
@@ -531,7 +535,7 @@
             <div class="input-group">
                 <input type="password" title="8-63 characters" required id="pass" name="pass" minlength="8" maxlength="63" value="<!--#PASS-->">
             </div>
-            <input type="checkbox" onclick="showPass()">Show Password
+            <input type="checkbox" style="width: 20px;" onclick="showPass()">Show Password
         </td>
         <td>WiFi Password&sup1;</td>
     </tr>
