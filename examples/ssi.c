@@ -121,6 +121,9 @@ u16_t __time_critical_func(ssi_handler)(int iIndex, char *pcInsert, int iInsertL
         case FVOL:  // Filter volume
             printed = snprintf(pcInsert, iInsertLen, "%.0f", pdata.filterVolume);
         break;
+        case FLRT:  // Flow rate
+            printed = snprintf(pcInsert, iInsertLen, "%.1f", sdata.flowRate);
+        break;
         case VERS:  // Program version
             printed = snprintf(pcInsert, iInsertLen, "%.1f", pdata.version);
         break;
@@ -300,6 +303,7 @@ err_t httpd_post_begin (
 err_t httpd_post_receive_data(void *connection, struct pbuf *p)
 {
     extern persistent_data pdata;
+    extern shared_data sdata;
     err_t ret;
     u16_t token, value_token, len_token;
     int apMode = 0;
@@ -369,6 +373,8 @@ err_t httpd_post_receive_data(void *connection, struct pbuf *p)
         if (pdata.totVolume > pdata.tankVolume) {
             pdata.totVolume = pdata.tankVolume;
         }
+
+        sdata.totVolume = pdata.totVolume;
 
         if (apMode == 2 && pdata.apMode == true) {
             pdata.apMode = false;

@@ -31,6 +31,7 @@
     TAG(FQV)   \
     TAG(FAGE)  \
     TAG(FVOL)  \
+    TAG(FLRT)  \
     TAG(VERS)  \
     TAG(IPAD)  \
     TAG(IPAGW) \

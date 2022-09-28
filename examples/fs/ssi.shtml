@@ -170,13 +170,14 @@
 
     const amonth = 2628288;
 
-    function loadXMLDoc()
+    function loadXMLDoc() 
     {
         var totvPo  = 0.0;
         var totvObj = document.getElementById("totv");
         var totvPr  = parseInt(totvObj.value, 10);
         var gtotv   = parseInt(document.getElementById("gtotv").value, 10);
         var fvol    = parseInt(document.getElementById("fvol").value, 10);
+        var tnkv    = parseInt(document.getElementById("tnkv").value, 10);
 
         var xhttp = new XMLHttpRequest();
 
@@ -186,27 +187,33 @@
             {
                 parser = new DOMParser();
                 xmlDoc = parser.parseFromString(this.responseText,"text/xml");
-                var hostname = xmlDoc.getElementsByTagName("hostname")[0].childNodes[0].nodeValue;
-                var time = xmlDoc.getElementsByTagName("time")[0].childNodes[0].nodeValue;
-                totvPo = totvObj.value = parseInt(xmlDoc.getElementsByTagName("totv")[0].childNodes[0].nodeValue);
+                var flrt = parseFloat(xmlDoc.getElementsByTagName("flrt")[0].childNodes[0].nodeValue);
+                totvPo = parseInt(xmlDoc.getElementsByTagName("totv")[0].childNodes[0].nodeValue);
 
-                if (totvPo > totvPr) {
-                    update_vols();
+                if (totvPo > totvPr && totvPr <= tnkv && flrt > 0.0) {
 
+                    var totv = totvPr;
+                    totv  += totvPo - totvPr;
                     gtotv += totvPo - totvPr;
-                    fvol  += totvPo - totvPr;
+                    fvol  += totvPo - totvPr; 
 
                     document.getElementById("gtotv").value = gtotv;
                     document.getElementById("fvol").value = fvol;
+                    totvObj.value = totv;
+
+                    update_vols();
+
                 }
-                
-                document.getElementById("h3header").innerHTML = hostname + " " + time;
+
+                var hostname = xmlDoc.getElementsByTagName("hostname")[0].childNodes[0].nodeValue;
+                var time = xmlDoc.getElementsByTagName("time")[0].childNodes[0].nodeValue;
+                var fl = flrt >0.0? "  flowrate now: " + flrt + " L/M": "";
+                document.getElementById("h3header").innerHTML = hostname + " " + time + fl;
             }
         };
         xhttp.open("GET", "ssi_xml.shtml", true);
         xhttp.send();
     }
-
 
     function upd_country(obj)
     {
@@ -333,9 +340,10 @@
     {
         var totv = parseInt(document.getElementById("totv").value, 10);
         var tnkv = parseInt(document.getElementById("tnkv").value, 10);
-        if (totv >= tnkv) document.getElementById("totv").value = totv = tnkv;
+        if (totv >= tnkv)
+            document.getElementById("totv").value = totv = tnkv;
         var vleft = Math.round(((tnkv-totv)/tnkv)*100);
-        document.getElementById("totv").title = "Volume left " + vleft + "%";
+        //document.getElementById("totv").title = "Volume left " + vleft + "%";
         document.getElementById("tnkv").title = "Volume left " + vleft + "%";
         document.getElementById("remv").title = "Volume left " + vleft + "%";
         document.getElementById("remv").value = tnkv - totv;
