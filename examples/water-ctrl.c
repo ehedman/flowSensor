@@ -115,9 +115,11 @@ static uint16_t FlowFreq =          0;  // Live flow frequency
 /**
  * ADC TDS sensing
  */
+#if defined HAS_TDS
 static const uint8_t adcPin =       26;
 // 12-bit conversion, assume max value == ADC_VREF == 3.3 V
 static const float adcConvFactor =  3.3f / (1 << 12);
+#endif
 
 /**
  * Session tick counter from the HAL sensor.
