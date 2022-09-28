@@ -11,6 +11,7 @@ Marine water flow sensor and meter
 - Monitor filter elapse time
 - Monitor total flow through filter
 - Monitor volume / time
+- Monitor TDS Water Quality
 - Near end of filter life alert
 - End of filter life alert
 - Automatic data memorised in flash
@@ -40,6 +41,8 @@ It is also possibe to switch between these modes by using the display (GPIO) but
 
 It is possible to simulate a flow sensor by applying a 2.5 Volt square wave to GPIO(5) at a frequency between 1 to 110 Hz.
 
+To simulate a TDS Water Quality Sensor, regulate with a pot a voltage between 0 to 3.3v at GPIO(26).
+
 To folow the console output, attach a seral to USB dongle to the Picos' No 1 (output)  pin.
 
 ### External dependencies
@@ -49,9 +52,6 @@ To folow the console output, attach a seral to USB dongle to the Picos' No 1 (ou
 - [Pico Extras](https://github.com/raspberrypi/pico-extras)
 - [LwIP Lightweight IP stack](https://www.nongnu.org/lwip/2_1_x/index.html)
 - [Waveshare SDK](https://www.waveshare.com/w/upload/0/06/Pico-LCD-1.14.zip)
-
-### Future ideas 
-- Add TDS sensor support (Water Quality Meter)
 
 ### Screenshot
 [Check THIS out](https://www.hedmanshome.se/digiflow-1.html)
