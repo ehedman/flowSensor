@@ -6,6 +6,7 @@ Marine water flow sensor and meter
 - Waveshare Precision RTC module
 - Waveshare 1.14" color display
 - A water flow sensor
+- A water temperature sensor DS18B20
 - A TDS sensor (Water Quality Sensor)
 
 ### Features
