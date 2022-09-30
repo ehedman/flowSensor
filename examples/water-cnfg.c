@@ -57,6 +57,10 @@
 #include "dhcpserver.h"
 #endif
 
+#ifdef HAS_TEMPS
+#include "one_wire_c.h"
+#endif
+
 #ifndef HAS_NET
 #undef LWIP_RAW
 #endif
@@ -350,16 +354,13 @@ time_t _time(time_t *tloc)
  */
 static time_t volatile_epoch = COMPILE_TIME_EPOCH;
 #else
-static time_t volatile_epoch;
+static time_t volatile_epoch = 1660411426;   // Fallback fake time around Sat Aug 13 17:20 202
 #endif
 
 time_t _time(time_t *tloc)
 {
     APP_UNUSED_ARG(tloc);
 
-    if (volatile_epoch == 0) {          // If not set yet
-        volatile_epoch = 1660411426;    // Fallback fake time around Sat Aug 13 17:20 202
-    }
     return volatile_epoch +  TZ_RZONE + get_absolute_time()/1000000;
 }
 
@@ -372,6 +373,65 @@ static void set_rtc(struct tm *utc, time_t *epoch)
 
 #endif  /* HAS_RTC */
 
+
+#if defined HAS_TDS
+
+/**
+ * Return water temperature
+ */
+#ifdef HAS_TEMPS
+static float getTemperature(void)
+{
+    static rom_address_t address;
+
+    one_wire_single_device_read_rom(&address);
+
+   // printf("Device Address: %02x%02x%02x%02x%02x%02x%02x%02x\n", address.rom[0], address.rom[1],
+   //     address.rom[2], address.rom[3], address.rom[4], address.rom[5], address.rom[6], address.rom[7]);
+
+    one_wire_convert_temperature(&address, true, false);
+    //printf("Temperature: %3.1foC\n", one_wire_temperature(&address));
+
+    return one_wire_temperature(&address);
+}
+#else
+static float getTemperature(void)
+{
+    return 20.0;
+
+}
+#endif /* HAS_TEMPS */
+
+#define TDSFACTOR 0.5  // tds = ec / 2
+
+/**
+ * 2-bit conversion, assume max value == ADC_VREF == 3.3 V
+ */
+static const float adcConvFactor =  3.3f / (1 << 12);
+
+/**
+ * Return TDS value
+ */
+void tdsConvert(shared_data *sdata)
+{
+    const float kValue = 1.0;
+    sdata->waterTemp = getTemperature();
+
+    float voltage = adc_read() * adcConvFactor;
+	float ecValue=(133.42*voltage*voltage*voltage - 255.86*voltage*voltage + 857.39*voltage)*kValue;
+	float ecValue25 = ecValue / (1.0+0.02*(sdata->waterTemp-25.0));  //temperature compensation
+    sdata->tdsValue = ecValue25 * TDSFACTOR;
+}
+
+#else /* HAS_TDS */
+
+void tdsConvert(shared_data *sdata)
+{
+    APP_UNUSED_ARG(sdata);
+}
+
+
+#endif /* HAS_TDS */
 
 #ifdef HAS_NET
 /**

@@ -19,15 +19,26 @@
 #define HAS_NET     // Enable support for for pico_w network else pico legacy with or without LCD hat for testing only.
 #endif
 
+#if !defined CYW43_HOST_NAME
+  #define CYW43_HOST_NAME "DigiFlow"
+#endif
+
 /*
  * The RTC hat is attached
  */
-#define HAS_RTC
+//#define HAS_RTC
 
 /**
  * An Gravity TDS meter is attached to GPIO 26
  */
-#define HAS_TDS
+//#define HAS_TDS
+
+/**
+ * Support for temp sensor dsb18b20 and oterhers
+ */
+#if defined HAS_TDS
+#define HAS_TEMPS
+#endif
 
 /**
  * For debugging
@@ -79,6 +90,7 @@ typedef struct s_data {
     float   totVolume;
     float   flowRate;
     float   tdsValue;
+    float   waterTemp;
     char    versionString[20];
     w_data  wfd[SSID_LIST];
 } shared_data;
@@ -117,6 +129,7 @@ extern bool     read_flash(persistent_data *pdata);
 extern bool     write_flash(persistent_data *new_data);
 extern void     goDormant(uint8_t dpin, persistent_data *pdata, shared_data *sdata, int lostPing);
 extern time_t   _time(time_t *tloc);
+extern void     tdsConvert(shared_data *sdata);
 
 #ifdef HAS_NET
 
@@ -129,6 +142,7 @@ extern bool     ping_status(void);
 extern void     wifi_scan(int scanTurns, shared_data *sdata);
 extern bool     wifi_find(char *ap, shared_data *sdata);
 extern void     init_httpd(bool doIt);
+
 
 #define PICO_CYW43_ARCH_THREADSAFE_BACKGROUND 1
 
@@ -194,5 +208,6 @@ extern void     init_httpd(bool doIt);
 #define time(a)         _time(a)            // Use our time() to get current epoch from RTC
 
 #endif
+
 
 

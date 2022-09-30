@@ -44,6 +44,10 @@
 #include <pico/cyw43_arch.h>
 #endif /* HAS_NET */
 
+#ifdef HAS_TEMPS
+#include "one_wire_c.h"
+#endif
+
 /**
  * Monitor the HALL sensor run state by frequency measurement.
  */
@@ -117,8 +121,10 @@ static uint16_t FlowFreq =          0;  // Live flow frequency
  */
 #if defined HAS_TDS
 static const uint8_t adcPin =       26;
-// 12-bit conversion, assume max value == ADC_VREF == 3.3 V
-static const float adcConvFactor =  3.3f / (1 << 12);
+#endif
+
+#ifdef HAS_TEMPS
+static const uint8_t tempPin =      22;
 #endif
 
 /**
@@ -299,6 +305,9 @@ static void gpioInit(void)
         adc_gpio_init(adcPin);
         adc_select_input(0);
 #endif
+#if defined HAS_TEMPS
+        one_wire_init(tempPin);
+#endif
 }
 
 /**
@@ -368,23 +377,6 @@ static void core1Thread(void)
     }
 
 }
-
-#if defined HAS_TDS
-#define TdsFactor 0.5  // tds = ec / 2
-static float tdsConvert(float adcVolt)
-{
-
-    float kValue = 1.0;
-    float temperature = 25.0;
-
-    float voltage = adcVolt;
-	float ecValue=(133.42*voltage*voltage*voltage - 255.86*voltage*voltage + 857.39*voltage)*kValue;
-	float ecValue25 = ecValue / (1.0+0.02*(temperature-25.0));  //temperature compensation
-	float tdsValue = ecValue25 * TdsFactor;
-
-    return (tdsValue);
-}
-#endif
 
 /**
  * Main control loop.
@@ -524,9 +516,6 @@ void water_ctrl(void)
 #endif
 
 #if defined COMPILE_TIME_EPOCH
-#if !defined CYW43_HOST_NAME
-  #define CYW43_HOST_NAME "DigiFlow"
-#endif
     curtime = COMPILE_TIME_EPOCH;
     printf("%s %.1f: Build: UTC %s", CYW43_HOST_NAME, pdata.version, ctime_r(&curtime, buffer_t));
 #endif
@@ -561,9 +550,7 @@ void water_ctrl(void)
                 printLog("USED=%.0fL", used);
                 printLog("REM=%.0fL", pdata.tankVolume - used);
                 sdata.totVolume = sessLitre + pdata.totVolume;
-#if defined HAS_TDS
-                sdata.tdsValue = tdsConvert(adc_read() * adcConvFactor);
-#endif
+                tdsConvert(&sdata);
                 DEV_SET_PWM(DEF_PWM);
 
             } else if (tmo-- <= 0) {

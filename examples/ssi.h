@@ -33,6 +33,7 @@
     TAG(FVOL)  \
     TAG(FLRT)  \
     TAG(TDS)   \
+    TAG(TEMP)  \
     TAG(VERS)  \
     TAG(IPAD)  \
     TAG(IPAGW) \

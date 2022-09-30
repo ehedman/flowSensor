@@ -5,6 +5,9 @@
     <time>
         <!--#CURTM-->
     </time>
+    <uptm>
+        <!--#UPTM-->
+    </uptm>
     <totv>
         <!--#TOTV-->
     </totv>
@@ -14,4 +17,7 @@
     <tds>
         <!--#TDS-->
     </tds>
+    <temp>
+        <!--#TEMP-->
+    </temp>
 </waterctrl>

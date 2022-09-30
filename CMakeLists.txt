@@ -1,6 +1,7 @@
 cmake_minimum_required(VERSION 3.13)
 include(pico_sdk_import.cmake)
 include(pico_extras_import.cmake)
+include(pico_onewire_import.cmake)
 project(DigiFlow VERSION 1.1)
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_CXX_STANDARD 17)
@@ -18,6 +19,7 @@ add_subdirectory(examples)
 
 # Add a header directory
 include_directories(examples)
+include_directories(pico-onewire)
 include_directories(./lib/Config)
 include_directories(./lib/GUI)
 include_directories(./lib/LCD)
@@ -70,14 +72,14 @@ if (PICO_CYW43_SUPPORTED) # set by command 'PICO_BOARD=pico_w cmake  ..'
                       DEPENDS fsdata.c)
         target_link_libraries(main
             examples GUI Fonts Config pico_stdlib hardware_spi pico_multicore hardware_flash 
-            hardware_rtc hardware_clocks hardware_rosc hardware_sleep hardware_adc
+            hardware_rtc hardware_clocks hardware_rosc hardware_sleep hardware_adc pico_one_wire
             pico_cyw43_arch_lwip_threadsafe_background cyw43_driver_base pico_lwip_http)
     endif()
 else()
     add_dependencies(main dynDefines)
     target_link_libraries(main
         examples LCD GUI Fonts Config pico_stdlib hardware_spi pico_multicore hardware_flash
-        hardware_rtc hardware_clocks hardware_rosc hardware_sleep hardware_adc)
+        hardware_rtc hardware_clocks hardware_rosc hardware_sleep hardware_adc pico_one_wire)
 endif()
 
 # enable usb output, disable uart output

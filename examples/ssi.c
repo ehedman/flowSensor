@@ -127,6 +127,9 @@ u16_t __time_critical_func(ssi_handler)(int iIndex, char *pcInsert, int iInsertL
         case TDS:  // TDS value
             printed = snprintf(pcInsert, iInsertLen, "%.0f", sdata.tdsValue);
         break;
+        case TEMP:  // Water temp
+            printed = snprintf(pcInsert, iInsertLen, "%3.1f", sdata.waterTemp);
+        break;
         case VERS:  // Program version
             printed = snprintf(pcInsert, iInsertLen, "%.1f", pdata.version);
         break;

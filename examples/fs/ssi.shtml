@@ -128,13 +128,18 @@
         padding-left: 2px;
     }
 
-    .submit {
+    #submitButt {
         float: right;
         font-size: inherit;
         background: inherit;
-        width:80px;
+        width: 80px;
+        
     }
-    
+
+    .buttons:hover {
+        background-color: #ddd !important;
+    }
+
     #trButt, #google_translate_element  {
         position:relative;
         float: right;
@@ -214,8 +219,9 @@
                 parser = new DOMParser();
                 xmlDoc = parser.parseFromString(this.responseText,"text/xml");
                 var flrt = parseFloat(xmlDoc.getElementsByTagName("flrt")[0].childNodes[0].nodeValue);
+                var wtemp = parseFloat(xmlDoc.getElementsByTagName("temp")[0].childNodes[0].nodeValue);
                 totvPo = parseInt(xmlDoc.getElementsByTagName("totv")[0].childNodes[0].nodeValue);
-                tds = xmlDoc.getElementsByTagName("tds")[0].childNodes[0].nodeValue;
+                var tds = xmlDoc.getElementsByTagName("tds")[0].childNodes[0].nodeValue.trim();
 
                 if (totvPo > totvPr && totvPr <= tnkv && flrt > 0.0) {
 
@@ -229,21 +235,36 @@
                     totvObj.value = totv;
 
                     update_vols();
+                    document.getElementById("submitButt").style.visibility = "hidden";
 
+                } else {
+                    document.getElementById("submitButt").style.visibility = "visible";
                 }
 
                 var hostname = xmlDoc.getElementsByTagName("hostname")[0].childNodes[0].nodeValue;
                 var time = xmlDoc.getElementsByTagName("time")[0].childNodes[0].nodeValue;
-                var fl = flrt >0.0? "  flowrate now: " + flrt + " L/M": "";
+
+                if (flrt > 0.0) {
+                    fl =  "  flowrate now: " + flrt + " L/M";
+                    document.getElementById("submitButt").style.visibility = "hidden";
+                } else {
+                    fl = "";
+                    document.getElementById("submitButt").style.visibility = "visible";
+                }
+
                 document.getElementById("h3header").innerHTML = hostname + " " + time + fl;
-                if (tds.trim() !== "0") {          
+                if (tds !== "0") {          
                     var cell = document.getElementsByClassName("tdsTr"); 
                     cell[0].style.display = "table-cell";
                     cell[1].style.display = "table-cell";
                     cell[2].style.display = "table-cell";
                     setColor(parseInt(tds.trim())/600, tdsObj);
-                    tdsObj.innerHTML = tds + "ppm";
+                    var temp = "";
+                    if (wtemp != 0) temp = " @ " + wtemp +"&#8451";
+
+                    tdsObj.innerHTML = tds + "ppm" + temp;
                 }
+                document.getElementById("uptm").value = xmlDoc.getElementsByTagName("uptm")[0].childNodes[0].nodeValue.trim();
             }
         };
         xhttp.open("GET", "ssi_xml.shtml", true);
@@ -510,6 +531,15 @@
 <input type="hidden" name="apm" id="apMode" value="<!--#APM-->">
 <input type="hidden" id="net_debug" value="<!--#NDBG-->">
 
+<script>
+    document.getElementById("form").onkeypress = function(e) {
+        var key = e.charCode || e.keyCode || 0;     
+        if (key == 13) {
+            e.preventDefault();
+        }
+    } 
+</script>
+
 <table>
     <tr>
         <th class="theader">Properties</th>
@@ -646,8 +676,8 @@
     </tr>
 
     <tr>
-        <td class="tdsTr"><label for="tdsDiv">TDS Value</label></td>
-        <td class="tdsTr"><div id="tdsDiv"><!--#TDS--></div></td>
+        <td class="tdsTr"><label>TDS Value</label></td>
+        <td class="tdsTr"><div translate="no" id="tdsDiv"><!--#TDS--></div></td>
         <td class="tdsTr" title="150-300: Good/Fair: 300+ Poor">Water Quality</td>
     </tr>
 
@@ -696,12 +726,12 @@
  
 </table>
 <br>
-<input type="submit" class="submit" value="Submit" title="Save changes">
+<input type="submit" class="buttons" id="submitButt" value="Submit" title="Save changes">
 </form>
 
 <div style="float: right; display: none;" id="apmDiv"><input type="checkbox" style="width: 20px;" id="apmCheck">Leave AP mode on submit&nbsp;&nbsp;&nbsp;</div>
 
-<button type="button" title="Undo changes" onclick="location.reload(true)">Refresh</button>
+<button type="button" class="buttons" title="Undo changes" onclick="location.reload(true)">Refresh</button>
 
 &nbsp;&nbsp;&nbsp;
 <a href="/panel.html?tvol=<!--#TNKV-->&tnkv=<!--#TOTV-->&fxd=<!--#FAGE-->&flv=<!--#FVOL-->&title=<!--#HNAME-->">About the Control Panel</a>
