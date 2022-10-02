@@ -1,4 +1,4 @@
-# Raspberry Pi Pico W flowSensor and Meter
+# Raspberry Pi Pico W flowSensor and TDS Meter
 Marine water flow sensor and meter
 
 ### Hardware used
