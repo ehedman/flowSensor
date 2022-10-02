@@ -14,6 +14,7 @@ Marine water flow sensor and meter
 - Monitor total flow through filter
 - Monitor volume / time
 - Monitor TDS Water Quality
+- Real-time trim of TDS K-value from web page
 - Near end of filter life alert
 - End of filter life alert
 - Automatic data memorised in flash
