@@ -162,6 +162,15 @@
         font-size: inherit;
     }
 
+    #kvalue {
+        width: 50px;
+        float: right;
+        padding: 0;
+        border: none;
+        background: inherit;
+        visibility: hidden;
+    }
+
     .input-group:has(:invalid) { /* has() not supported on firefox 106 */
       border: 2px solid red;
       animation: shake 0.82s cubic-bezier(.36,.07,.19,.97) both;
@@ -190,7 +199,16 @@
 
     <script>
 
+    var timerObj;
     const amonth = 2628288;
+    const UrlBase  = 0;
+    const urlCalUp = 1;
+    const urlCalDn = 2;
+    var urlIndx = UrlBase;
+    const urlDest = ["ssi_xml.shtml", "calUp_xml.shtml", "calDn_xml.shtml"];
+    var doAsynch = true;
+
+    var curKValue = <!--#KVAL-->;
 
     function setColor(value, obj)
     {
@@ -202,26 +220,27 @@
 
     function loadXMLDoc() 
     {
-        var totvPo  = 0.0;
-        var totvObj = document.getElementById("totv");
-        var totvPr  = parseInt(totvObj.value, 10);
-        var gtotv   = parseInt(document.getElementById("gtotv").value, 10);
-        var fvol    = parseInt(document.getElementById("fvol").value, 10);
-        var tnkv    = parseInt(document.getElementById("tnkv").value, 10);
         var tdsObj  = document.getElementById("tdsDiv");
 
         var xhttp = new XMLHttpRequest();
 
         xhttp.onreadystatechange = function()
         {
-            if (this.readyState == 4 && this.status == 200)
+            if (this.readyState == 4 && this.status == 200 && urlIndx == UrlBase)
             {
+                var totvObj = document.getElementById("totv");
+                var totvPr  = parseInt(totvObj.value, 10);
+                var gtotv   = parseInt(document.getElementById("gtotv").value, 10);
+                var fvol    = parseInt(document.getElementById("fvol").value, 10);
+                var tnkv    = parseInt(document.getElementById("tnkv").value, 10);
+
                 parser = new DOMParser();
                 xmlDoc = parser.parseFromString(this.responseText,"text/xml");
                 var flrt = parseFloat(xmlDoc.getElementsByTagName("flrt")[0].childNodes[0].nodeValue);
                 var wtemp = parseFloat(xmlDoc.getElementsByTagName("temp")[0].childNodes[0].nodeValue);
-                totvPo = parseInt(xmlDoc.getElementsByTagName("totv")[0].childNodes[0].nodeValue);
+                var totvPo = parseInt(xmlDoc.getElementsByTagName("totv")[0].childNodes[0].nodeValue);
                 var tds = xmlDoc.getElementsByTagName("tds")[0].childNodes[0].nodeValue.trim();
+                document.getElementById("kvalue").value = xmlDoc.getElementsByTagName("kvalue")[0].childNodes[0].nodeValue.trim();
 
                 if (totvPo > totvPr && totvPr <= tnkv && flrt > 0.0) {
 
@@ -253,6 +272,7 @@
                 }
 
                 document.getElementById("h3header").innerHTML = hostname + " " + time + fl;
+
                 if (tds !== "0") {          
                     var cell = document.getElementsByClassName("tdsTr"); 
                     cell[0].style.display = "table-cell";
@@ -265,10 +285,29 @@
                     tdsObj.innerHTML = tds + "ppm" + temp;
                 }
                 document.getElementById("uptm").value = xmlDoc.getElementsByTagName("uptm")[0].childNodes[0].nodeValue.trim();
+            } else if (this.readyState == 4 && this.status == 200 && urlIndx > UrlBase)
+            {
+                urlIndx = UrlBase;
+                doAsynch = true;
+                timerObj = setInterval(function () {loadXMLDoc();}, 2000);
             }
         };
-        xhttp.open("GET", "ssi_xml.shtml", true);
+        xhttp.open("GET", urlDest[urlIndx], doAsynch);
         xhttp.send();
+    }
+
+    function updKValue(obj)
+    {
+        if (obj.value > curKValue) {
+            urlIndx = urlCalUp;
+            curKValue += 0.1;
+        } else if (obj.value < curKValue) {
+            urlIndx = urlCalDn;
+            curKValue -= 0.1;
+        }
+        clearInterval(timerObj);
+        doAsynch = false;
+        loadXMLDoc();
     }
 
     function upd_country(obj)
@@ -390,6 +429,11 @@
         }
            
         return validIPmsg(obj, true);
+    }
+
+    function showKvalue(arg)
+    {
+        document.getElementById("kvalue").style.visibility = arg;
     }
 
     function update_vols()
@@ -677,8 +721,12 @@
 
     <tr>
         <td class="tdsTr"><label>TDS Value</label></td>
-        <td class="tdsTr"><div translate="no" id="tdsDiv"><!--#TDS--></div></td>
-        <td class="tdsTr" title="150-300: Good/Fair: 300+ Poor">Water Quality</td>
+        <td class="tdsTr">
+            <div id="tdsDiv" translate="no"></div> <!-- inner-html updates -->
+        </td>
+        <td class="tdsTr" onmouseover="showKvalue('visible')" onmouseout="showKvalue('hidden')" title="150-300: Good/Fair: 300+ Poor">
+            <input id="kvalue" onchange="updKValue(this)" title="TDS K-value trim +/- 0.1 step range is 0.6-2.0" type="number" min="0.6" max="2.0" step="0.1" value="<!--#KVAL-->">Water Quality
+        </td>
     </tr>
 
     <tr>
@@ -741,7 +789,7 @@ Changing any of the SSID, Password or Country Code parameters will result a lost
 rebooted. You then have to regain the connection by joining your host to that new AP WiFi network.</p>
 
 <script>
-    setInterval(function () {loadXMLDoc();}, 2000);
+    timerObj = setInterval(function () {loadXMLDoc();}, 2000);
 </script>
 
 </div>

@@ -130,6 +130,15 @@ u16_t __time_critical_func(ssi_handler)(int iIndex, char *pcInsert, int iInsertL
         case TEMP:  // Water temp
             printed = snprintf(pcInsert, iInsertLen, "%3.1f", sdata.waterTemp);
         break;
+        case KVAL:  // K value calibration
+            printed = snprintf(pcInsert, iInsertLen, "%.1f", pdata.kValue);
+        break;
+        case KVUP:  // K value calibration Up
+            printed = snprintf(pcInsert, iInsertLen, "%.1f", pdata.kValue); if (pdata.kValue +0.1 < 2.1) {pdata.kValue += 0.1;}
+        break;
+        case KVDN:  // K value calibration Down
+            printed = snprintf(pcInsert, iInsertLen, "%.1f", pdata.kValue); if (pdata.kValue -0.1 > 0.5) {pdata.kValue -= 0.1;}
+        break;
         case VERS:  // Program version
             printed = snprintf(pcInsert, iInsertLen, "%.1f", pdata.version);
         break;
@@ -365,6 +374,7 @@ err_t httpd_post_receive_data(void *connection, struct pbuf *p)
                         case FQV:   pdata.sensFq = (float)atof(dec);         break;
                         case FAGE:  pdata.filterAge = (float)atol(dec);      break;
                         case FVOL:  pdata.filterVolume = (float)atof(dec);   break;
+                        case KVAL:  pdata.kValue = (float)atof(dec);         break;
                         case APM:   apMode = atoi(dec);                      break;
                         default:    /* unknown/ignored tag */                break;
                     }      

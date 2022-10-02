@@ -3,7 +3,7 @@
 /**
  * C to C++ interface
  */
-#ifndef _WATERCTRL_H_
+#ifdef __cplusplus
 
 #ifdef __cplusplus
 extern "C" {
@@ -67,7 +67,6 @@ rom_address_t &one_wire_get_address(int index)
 {
     One_wire obj = One_wire(oneWire._data_pin);
     return obj.get_address(index);
-
 }
 
 void one_wire_single_device_read_rom(rom_address_t &rom_address)
@@ -75,7 +74,6 @@ void one_wire_single_device_read_rom(rom_address_t &rom_address)
     One_wire obj = One_wire(oneWire._data_pin);
 
     obj.single_device_read_rom(rom_address);
-
 }
 
 
@@ -83,7 +81,7 @@ void one_wire_single_device_read_rom(rom_address_t &rom_address)
 }
 #endif
 
-#else /* _WATERCTRL_H_ */
+#else /* __cplusplus */
 
 #define ROMSize 8
 
@@ -100,6 +98,6 @@ rom_address_t   one_wire_address_from_hex(const char *hex_address);
 rom_address_t   one_wire_get_address(int index);
 void            one_wire_single_device_read_rom(rom_address_t *rom_address);
 
-#endif
+#endif  /* __cplusplus */
 
 

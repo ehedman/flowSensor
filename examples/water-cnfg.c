@@ -373,7 +373,6 @@ static void set_rtc(struct tm *utc, time_t *epoch)
 
 #endif  /* HAS_RTC */
 
-
 #if defined HAS_TDS
 
 /**
@@ -383,14 +382,14 @@ static void set_rtc(struct tm *utc, time_t *epoch)
 static float getTemperature(void)
 {
     static rom_address_t address;
+    static bool init;
 
-    one_wire_single_device_read_rom(&address);
-
-   // printf("Device Address: %02x%02x%02x%02x%02x%02x%02x%02x\n", address.rom[0], address.rom[1],
-   //     address.rom[2], address.rom[3], address.rom[4], address.rom[5], address.rom[6], address.rom[7]);
+    if (init == false) {
+        one_wire_single_device_read_rom(&address);
+        init = true;
+    }
 
     one_wire_convert_temperature(&address, true, false);
-    //printf("Temperature: %3.1foC\n", one_wire_temperature(&address));
 
     return one_wire_temperature(&address);
 }
@@ -402,25 +401,26 @@ static float getTemperature(void)
 }
 #endif /* HAS_TEMPS */
 
-#define TDSFACTOR 0.5  // tds = ec / 2
-
 /**
- * 2-bit conversion, assume max value == ADC_VREF == 3.3 V
- */
-static const float adcConvFactor =  3.3f / (1 << 12);
-
-/**
- * Return TDS value
- */
-void tdsConvert(shared_data *sdata)
+ * Return TDS value for a Gravity TDS module
+ * TDS module output voltage: 0 ~ 2.3V @ Range: 0 ~ 1000ppm
+*/
+void tdsConvert(shared_data *sdata, persistent_data *pdata)
 {
-    const float kValue = 1.0;
-    sdata->waterTemp = getTemperature();
+    const float TdsFactor = 0.5;                // TDS value is half of the electrical conductivity value, that is: TDS = EC / 2. 
+    //pdata->kValue                             // K value of the probe, eventually calibrated in a known (xxx ppm) water buffer solution
+    const float adcConv =  3.3f / (1 << 12);    // 2-bit conversion, assume max value == ADC_VREF == 3.3 V for pico
+    float voltage = adc_read() * adcConv;       // Voltage reading copensated for 3.3 volt
+    float temperature = getTemperature();       // The temp sensors value in Co   
 
-    float voltage = adc_read() * adcConvFactor;
-	float ecValue=(133.42*voltage*voltage*voltage - 255.86*voltage*voltage + 857.39*voltage)*kValue;
-	float ecValue25 = ecValue / (1.0+0.02*(sdata->waterTemp-25.0));  //temperature compensation
-    sdata->tdsValue = ecValue25 * TDSFACTOR;
+    if (voltage > 3.3 || temperature > 55.0 || temperature < 1) {
+        return; // A glitch of bad readings
+    }
+    sdata->waterTemp = temperature;
+
+	float ecValue=(133.42*voltage*voltage*voltage - 255.86*voltage*voltage + 857.39*voltage)*pdata->kValue;    // Before compensation
+	float ecValue25 = ecValue / (1.0+0.02*(sdata->waterTemp-25.0));  // After compensation (1.0+0.02*(Measured_Temperature-25.0))
+    sdata->tdsValue = ecValue25 * TdsFactor;
 }
 
 #else /* HAS_TDS */
@@ -429,7 +429,6 @@ void tdsConvert(shared_data *sdata)
 {
     APP_UNUSED_ARG(sdata);
 }
-
 
 #endif /* HAS_TDS */
 

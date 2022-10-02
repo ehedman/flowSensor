@@ -34,6 +34,9 @@
     TAG(FLRT)  \
     TAG(TDS)   \
     TAG(TEMP)  \
+    TAG(KVAL)  \
+    TAG(KVUP)  \
+    TAG(KVDN)  \
     TAG(VERS)  \
     TAG(IPAD)  \
     TAG(IPAGW) \

@@ -480,6 +480,7 @@ void water_ctrl(void)
         pdata.filterVolume = 0.0;
         pdata.filterAge = time(NULL) + SDAY;
         pdata.sensFq = SENS_FQC;
+        pdata.kValue = 1.0;
         pdata.version = (float)atof(sdata.versionString);
         pdata.rebootCount = 0;
         pdata.rebootTime = time(NULL);
@@ -545,12 +546,12 @@ void water_ctrl(void)
                 }
                 clearLog(HDR_OK);
                 printHdr("Flowing");
-                printf("FlowFreq=%dHz\n", FlowFreq);
+                //printf("FlowFreq=%dHz\n", FlowFreq);
                 printLog("FLOW=%.1fL/M", sdata.flowRate);
                 printLog("USED=%.0fL", used);
                 printLog("REM=%.0fL", pdata.tankVolume - used);
                 sdata.totVolume = sessLitre + pdata.totVolume;
-                tdsConvert(&sdata);
+                tdsConvert(&sdata, &pdata);
                 DEV_SET_PWM(DEF_PWM);
 
             } else if (tmo-- <= 0) {
@@ -687,6 +688,8 @@ void water_ctrl(void)
 #else
             sleep_ms(1000);
 #endif /* HAS_NET */
+
+            tdsConvert(&sdata, &pdata);
 
             if (doSave == true && delSave-- <= 0) { // Avoid repeated saves for rapid events
                 printf("Delayed save\n");

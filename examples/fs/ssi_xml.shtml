@@ -17,6 +17,9 @@
     <tds>
         <!--#TDS-->
     </tds>
+    <kvalue>
+        <!--#KVAL-->
+    </kvalue>
     <temp>
         <!--#TEMP-->
     </temp>

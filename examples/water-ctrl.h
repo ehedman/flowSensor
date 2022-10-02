@@ -26,12 +26,12 @@
 /*
  * The RTC hat is attached
  */
-//#define HAS_RTC
+#define HAS_RTC
 
 /**
  * An Gravity TDS meter is attached to GPIO 26
  */
-//#define HAS_TDS
+#define HAS_TDS
 
 /**
  * Support for temp sensor dsb18b20 and oterhers
@@ -114,6 +114,7 @@ typedef struct p_data {
     float       tankVolume;
     float       filterVolume;
     float       sensFq;
+    float       kValue;
     time_t      filterAge;
     float       version;
     time_t      rebootTime;
@@ -129,7 +130,7 @@ extern bool     read_flash(persistent_data *pdata);
 extern bool     write_flash(persistent_data *new_data);
 extern void     goDormant(uint8_t dpin, persistent_data *pdata, shared_data *sdata, int lostPing);
 extern time_t   _time(time_t *tloc);
-extern void     tdsConvert(shared_data *sdata);
+extern void     tdsConvert(shared_data *sdata, persistent_data *pdata);
 
 #ifdef HAS_NET
 
