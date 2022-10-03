@@ -116,7 +116,7 @@
         background: white;
     }
 
-    .tdsTr {
+    .tdsTr, .system {
         display : none;
     }
 
@@ -449,6 +449,15 @@
         document.getElementById("remv").value = tnkv - totv;
     }
 
+    function showAll()
+    {
+        var cell = document.getElementsByClassName("system"); 
+        Array.prototype.forEach.call(cell, function(el) {
+            el.style.display = "table-cell";
+        });
+        document.getElementById("showAllspan").style.visibility = 'hidden';
+    }
+
     function init()
     {
         var obje = document.getElementById("fage");
@@ -521,6 +530,7 @@
         if (document.getElementById("apMode").value === "1") {
             document.getElementById("apmDiv").style.display='block'; 
             document.getElementById("trButt").style.display='none';
+            showAll();
         }
     }
 
@@ -560,10 +570,23 @@
 
 <div class="content">
 
-<h3>
-    <span translate="no" id="h3header"><!--#HNAME--> <!--#CURTM--></span>
-    <button id="trButt" type="button" onclick="googleTranslateElementInit(true)">Translate</button>
-</h3>
+<table>
+    <tr style="background-color: inherit;">
+        <td style="width: 66%; border:none;">
+            <h3 translate="no" id="h3header"><!--#HNAME--> <!--#CURTM--></h3>
+        </td>
+
+        <td style="border:none">
+            <span id="showAllspan">
+                <input style="width: 32px;" title="Show system  properties" type="checkbox" onclick="showAll()">Show all
+            </span>
+        </td>
+
+        <td style="border:none">
+            <button id="trButt" type="button" onclick="googleTranslateElementInit(true)">Translate</button>
+        </td>
+    </tr>
+</table>
 
 <div id="google_translate_element"></div>
 <!--#TRNS-->
@@ -592,8 +615,8 @@
     </tr>
 
     <tr>  
-        <td><label for="ssid">SSID</label></td>
-        <td>
+        <td class="system"><label for="ssid">SSID</label></td>
+        <td class="system">
             <div class="input-group">
                 <input type="text" title="Max 32 characters" pattern='[^!#;,].+[^+,\]/"]' required id="ssid" maxlength="32" name="ssid" value="<!--#SSID-->">
             </div>
@@ -601,23 +624,23 @@
                 <option selected value="0">Select ssid</option>
             </select>
         </td>
-        <td>WiFi Network Name&sup1;</td>
+        <td class="system">WiFi Network Name&sup1;</td>
     </tr>
 
     <tr>
-        <td><label for="pass">Password</label></td>
-        <td>
+        <td class="system"><label for="pass">Password</label></td>
+        <td class="system">
             <div class="input-group">
                 <input type="password" title="8-63 characters" required id="pass" name="pass" minlength="8" maxlength="63" value="<!--#PASS-->">
             </div>
             <input type="checkbox" style="width: 20px;" onclick="showPass()">Show Password
         </td>
-        <td>WiFi Password&sup1;</td>
+        <td class="system">WiFi Password&sup1;</td>
     </tr>
 
     <tr>
-        <td><label for="cou">Country Code</label></td>
-        <td>
+        <td class="system"><label for="cou">Country Code</label></td>
+        <td class="system">
             <input type="text" readonly id="cou" name="cou" title="cyw43_country.h" value="<!--#COU-->">
             <select  style="text-transform: lowercase;" name="couopt" id="couopt" title="CountryCode" onchange="upd_country(this)">
                 <option selected value="0">Select new</option>
@@ -675,12 +698,12 @@
                 <option value="21333">USA</option>
             </select> 
         </td>
-        <td>WiFi Country code&sup1;</td>
+        <td class="system">WiFi Country code&sup1;</td>
     </tr>
 
     <tr>
-        <td><label for="ntp">NTP Server</label></td>
-        <td>
+        <td class="system"><label for="ntp">NTP Server</label></td>
+        <td class="system">
             <div class="input-group">
                 <input type="text" onmouseover="isValidIP(this)" id="ntp" name="ntp" minlength="1" maxlength="70" value="<!--#NTP-->">
             </div>
@@ -692,7 +715,7 @@
                 <option value="time.apple.com">time.apple.com</option>
             </select> 
         </td>
-        <td>0.0.0.0 = AP (NTP service of the Access Point)&sup1;</td>
+        <td class="system">0.0.0.0 = AP (NTP service of the Access Point)&sup1;</td>
     </tr>
 
     <tr>
@@ -752,24 +775,24 @@
     </tr>
 
     <tr>
-        <td><label for="vers">Firmware Version</label></td>
-        <td><input type="text" style="background: lightgray" id="vers" readonly value="<!--#VERS-->"></td>
-        <td>Version of this application</td>
+        <td class="system"><label for="vers">Firmware Version</label></td>
+        <td class="system"><input type="text" style="background: lightgray" id="vers" readonly value="<!--#VERS-->"></td>
+        <td class="system">Version of this application</td>
     </tr>
     <tr>
-        <td><label for="ipad">I.P address</label></td>
-        <td><input type="text" title="Device I.P" style="background: lightgray" id="ipad" readonly value="<!--#IPAD-->"></td>
-        <td>DHCP I.P address assigned for this device</td>
+        <td class="system"><label for="ipad">I.P address</label></td>
+        <td class="system"><input type="text" title="Device I.P" style="background: lightgray" id="ipad" readonly value="<!--#IPAD-->"></td>
+        <td class="system">DHCP I.P address assigned for this device</td>
     </tr>
     <tr>
-        <td><label for="ipagw">GW I.P address</label></td>
-        <td><input type="text" title="Default gateway" style="background: lightgray" id="ipagw" readonly value="<!--#IPAGW-->"></td>
-        <td>DHCP Default gateway I.P assigned for this device</td>
+        <td class="system"><label for="ipagw">GW I.P address</label></td>
+        <td class="system"><input type="text" title="Default gateway" style="background: lightgray" id="ipagw" readonly value="<!--#IPAGW-->"></td>
+        <td class="system">DHCP Default gateway I.P assigned for this device</td>
     </tr>
     <tr>
-        <td><label for="uptm">Uptime</label></td>
-        <td><input type="text" title="Device uptime" style="background: lightgray" id="uptm" readonly value="<!--#UPTM-->"></td>
-        <td>Device uptime</td>
+        <td class="system"><label for="uptm">Uptime</label></td>
+        <td class="system"><input type="text" title="Device uptime" style="background: lightgray" id="uptm" readonly value="<!--#UPTM-->"></td>
+        <td class="system">Device uptime</td>
     </tr>
  
 </table>
@@ -784,7 +807,7 @@
 &nbsp;&nbsp;&nbsp;
 <a href="/panel.html?tvol=<!--#TNKV-->&tnkv=<!--#TOTV-->&fxd=<!--#FAGE-->&flv=<!--#FVOL-->&title=<!--#HNAME-->">About the Control Panel</a>
 
-<p>&sup1; Reboot required.<br>
+<p class="system"><br>&sup1; Reboot required.<br>
 Changing any of the SSID, Password or Country Code parameters will result a lost connection the next time this device is
 rebooted. You then have to regain the connection by joining your host to that new AP WiFi network.</p>
 
