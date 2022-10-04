@@ -551,7 +551,9 @@ void water_ctrl(void)
                 printLog("USED=%.0fL", used);
                 printLog("REM=%.0fL", pdata.tankVolume - used);
                 sdata.totVolume = sessLitre + pdata.totVolume;
-                tdsConvert(&sdata, &pdata);
+                if (sdata.tdsValue != 0) {
+                    printLog("TDS=%.0fppm", sdata.tdsValue);
+                }
                 DEV_SET_PWM(DEF_PWM);
 
             } else if (tmo-- <= 0) {
@@ -565,6 +567,7 @@ void water_ctrl(void)
                 sleep_ms(2000);
                 break;
             }
+            tdsConvert(&sdata, &pdata);
             sleep_ms(2000);
         }
  
@@ -730,12 +733,13 @@ void water_ctrl(void)
                 info_t = localtime(&pdata.filterAge);
                 strftime(buffer_t, sizeof(buffer_t), "%d/%m/%y", info_t);
                 printLog("FXD=%s", buffer_t);
-#if defined HAS_TDS
 
-                printLog("TDS=%.0fppm", sdata.tdsValue);
-#else
-                printLog("FLV=%.0fL", pdata.filterVolume);
-#endif
+                if (sdata.tdsValue != 0) {
+                    printLog("TDS=%.0fppm", sdata.tdsValue);
+                } else {
+                    printLog("FLV=%.0fL", pdata.filterVolume);
+                }
+
                 DEV_SET_PWM(DEF_PWM);
                 sleep_ms(10000);
 

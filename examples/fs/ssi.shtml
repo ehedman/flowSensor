@@ -6,6 +6,8 @@
     <meta name="description" content="hedmanshome.se Marine Water FlowMeter">
     <meta name="author" content="Erland Hedman">
     <meta name="license" content="Free">
+    <meta name="license" content="gaugeSVG CPOL 1.0.2">
+    <script src="gaugeSVG.js"></script>
     <link rel="icon" href="drop.ico">
 
     <style>
@@ -171,6 +173,19 @@
         visibility: hidden;
     }
 
+    #containerFlrt, #containerTank {
+        width:250px; height:200px;
+        display: inline-block;
+        margin: 1em;
+    }
+
+    #containerTds, #containerTemp {
+        width:250px; height:200px;
+        display: inline-block;
+        margin: 1em;
+        visibility: hidden;
+    }
+
     .input-group:has(:invalid) { /* has() not supported on firefox 106 */
       border: 2px solid red;
       animation: shake 0.82s cubic-bezier(.36,.07,.19,.97) both;
@@ -207,6 +222,8 @@
     var urlIndx = UrlBase;
     const urlDest = ["ssi_xml.shtml", "calUp_xml.shtml", "calDn_xml.shtml"];
     var doAsynch = true;
+    var guageBlock = false;
+    var usedVolume = <!--#TOTV-->;
 
     var curKValue = <!--#KVAL-->;
 
@@ -244,20 +261,32 @@
 
                 if (totvPo > totvPr && totvPr <= tnkv && flrt > 0.0) {
 
-                    var totv = totvPr;
-                    totv  += totvPo - totvPr;
+                    usedVolume = totvPr;
+                    usedVolume  += totvPo - totvPr;
                     gtotv += totvPo - totvPr;
                     fvol  += totvPo - totvPr; 
 
                     document.getElementById("gtotv").value = gtotv;
                     document.getElementById("fvol").value = fvol;
-                    totvObj.value = totv;
+                    totvObj.value = usedVolume;
 
                     update_vols();
                     document.getElementById("submitButt").style.visibility = "hidden";
 
                 } else {
                     document.getElementById("submitButt").style.visibility = "visible";
+                }
+
+                if (guageBlock == true) {
+                    guageTank.refresh(tnkv-usedVolume, true);
+                    guageFlrt.refresh(flrt);
+
+                    if (wtemp > 0 && parseFloat(tds) > 0) {
+                        document.getElementById("containerTds").style.visibility = 'visible';
+                        document.getElementById("containerTemp").style.visibility = 'visible';
+                        guageTemp.refresh(wtemp, true);                  
+                        guageTds.refresh(parseFloat(tds), true);
+                    }
                 }
 
                 var hostname = xmlDoc.getElementsByTagName("hostname")[0].childNodes[0].nodeValue;
@@ -272,6 +301,9 @@
                 }
 
                 document.getElementById("h3header").innerHTML = hostname + " " + time + fl;
+                if (guageBlock == true) {
+                    document.getElementById("h3Guageheader").innerHTML = hostname + " " + time;
+                }
 
                 if (tds !== "0") {          
                     var cell = document.getElementsByClassName("tdsTr"); 
@@ -449,13 +481,43 @@
         document.getElementById("remv").value = tnkv - totv;
     }
 
-    function showAll()
+    function showAll(obj)
     {
         var cell = document.getElementsByClassName("system"); 
         Array.prototype.forEach.call(cell, function(el) {
             el.style.display = "table-cell";
         });
-        document.getElementById("showAllspan").style.visibility = 'hidden';
+        document.getElementById("showAllspan").style.display = 'none';
+        document.getElementById("showLessspan").style.display = 'block';
+        obj.checked = false;
+    }
+
+    function showLess(obj)
+    {
+        guageBlock = false;
+        var cell = document.getElementsByClassName("system"); 
+        Array.prototype.forEach.call(cell, function(el) {
+            el.style.display = "none";
+        });
+        document.getElementById("showAllspan").style.display = 'block';
+        document.getElementById("showLessspan").style.display = 'none';
+        obj.checked = false;
+    }
+
+    function showDefault(obj)
+    {
+        guageBlock = false;
+        document.getElementById("showDetailes").style.display = 'block';
+        document.getElementById("showGuages").style.display = 'none';
+        obj.checked = false;
+    }
+
+    function showDash(obj)
+    {
+        guageBlock = true;
+        document.getElementById("showDetailes").style.display = 'none';
+        document.getElementById("showGuages").style.display = 'block';
+        obj.checked = false;
     }
 
     function init()
@@ -570,6 +632,8 @@
 
 <div class="content">
 
+<div id="showDetailes"> <!-- show as tables -->
+
 <table>
     <tr style="background-color: inherit;">
         <td style="width: 66%; border:none;">
@@ -578,7 +642,11 @@
 
         <td style="border:none">
             <span id="showAllspan">
-                <input style="width: 32px;" title="Show system  properties" type="checkbox" onclick="showAll()">Show all
+                <input style="width: 32px;" title="Show system  properties" type="checkbox" onclick="showAll(this)">Show all
+                <input style="width: 32px;" title="Show flow  dashboard" type="checkbox" onclick="showDash(this)">Show dashboard
+            </span>
+            <span id="showLessspan" style="display: none;">
+                <input style="width: 32px;" title="Show system  properties" type="checkbox" onclick="showLess(this)">Show less
             </span>
         </td>
 
@@ -807,11 +875,114 @@
 &nbsp;&nbsp;&nbsp;
 <a href="/panel.html?tvol=<!--#TNKV-->&tnkv=<!--#TOTV-->&fxd=<!--#FAGE-->&flv=<!--#FVOL-->&title=<!--#HNAME-->">About the Control Panel</a>
 
+</div> <!-- show as tables -->
+
+<div id="showGuages" style="scale: 0.9; width: max-content;">
+    <h3 translate="no" style="margin:0;" id="h3Guageheader"><!--#HNAME--> <!--#CURTM--> </h3>
+    <input style="width: 32px;" title="Show as table" type="checkbox" onclick="showDefault(this)">Show detailes
+    <div id="containerFlrt"></div>
+    <div id="containerTank"></div>
+    <div id="containerTds"></div>
+    <div id="containerTemp"></div>
+</div>
+
+<script>
+
+    guageFlrt = new GaugeSVG({
+	    id: "containerFlrt",
+        value: <!--#FLRT-->,
+	    valueColor: "#444488",
+	    min: 0,
+	    max: 10,
+	    minmaxColor: "#444488",
+	    title: "Flowrate",
+	    titleColor: "#8888cc",
+	    label: "L/M",
+	    labelColor: "#8888cc",
+	    gaugeWidthScale: 1.25,
+	    gaugeBorderColor: "#222244",
+	    gaugeBorderWidth: 1.5,
+	    gaugeShadowColor: "#444488",
+	    gaugeShadowScale: 1.35,
+	    canvasBackColor: "#f2f2f2",
+	    gaugeBackColor: "#ccccff",
+	    needleColor: "#8888cc",
+	    lowerActionLimit: -1,
+	    lowerWarningLimit: -1,
+	    upperWarningLimit: -1,
+	    upperActionLimit: -1,
+    });
+
+   var guageTank = new GaugeSVG({
+	    id: "containerTank", 
+	    value: <!--#TNKV-->-<!--#TOTV-->,
+	    valueColor: "#444488",
+	    min: 0,
+	    max: <!--#TNKV-->,
+	    minmaxColor: "#444488",
+	    title: "Tank",
+	    titleColor: "#8888cc",
+	    label: "liters",
+	    labelColor: "#8888cc",
+	    gaugeWidthScale: 1.25,
+	    gaugeBorderColor: "#222244",
+	    gaugeBorderWidth: 1.5,
+	    gaugeShadowColor: "#444488",
+	    gaugeShadowScale: 1.35,
+	    canvasBackColor: "#f2f2f2",
+	    gaugeBackColor: "#ccccff",
+	    needleColor: "#8888cc",
+	    lowerActionLimit: -1,
+	    lowerWarningLimit: -1,
+	    upperWarningLimit: -1,
+	    upperActionLimit: -1,
+    });
+    
+    var guageTds = new GaugeSVG({
+	    id: "containerTds", 
+	    value: <!--#TDS-->, 
+	    title: "TDS",
+	    label: "ppm",
+	    gaugeWidthScale: 1.0,
+	    min: 4.0,
+	    max: 1000.0,
+	    //lowerActionLimit: 1,
+	    lowerWarningLimit: 30.0,
+        upperWarningLimit: 400,
+        upperActionLimit: 600,
+	    needleColor: "#880088",
+	    optimumRangeColor: "#88ff88",
+	    warningRangeColor: "#f4f444",
+        canvasBackColor: "#f2f2f2",
+	    actionRangeColor: "#ff8888"
+    });
+    
+    var guageTemp = new GaugeSVG({
+	    id: "containerTemp",
+	    value: <!--#TEMP-->,
+	    title: "Temp",
+	    label: "℃",
+	    gaugeWidthScale: 1.0,
+	    min: 1.0,
+	    max: 45.0,
+	    lowerActionLimit: 1,
+	    lowerWarningLimit: 3.0,
+        upperWarningLimit: 30,
+	    needleColor: "#880088",
+	    optimumRangeColor: "#88ff88",
+	    warningRangeColor: "#f4f444",
+        canvasBackColor: "#f2f2f2",
+	    actionRangeColor: "#ff8888"
+    });
+
+</script>
+
 <p class="system"><br>&sup1; Reboot required.<br>
 Changing any of the SSID, Password or Country Code parameters will result a lost connection the next time this device is
 rebooted. You then have to regain the connection by joining your host to that new AP WiFi network.</p>
 
 <script>
+    document.getElementById("showGuages").style.display = 'none';
     timerObj = setInterval(function () {loadXMLDoc();}, 2000);
 </script>
 
