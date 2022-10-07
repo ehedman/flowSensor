@@ -399,7 +399,7 @@
         if (day.length < 2) 
             day = '0' + day;
 
-        return [day, month, year].join('-');
+        return [year, month, day].join('-');
     }
 
     function ToLocalDate (inDate) {
@@ -408,37 +408,26 @@
         return formatDate(date.setUTCSeconds(inDate));
     }
 
-    function setFdate(how)
+    function setFdate(obj)
     {
         var obje = document.getElementById("fage");
         var objeval = parseInt(obje.value, 10);
-        var objd = document.getElementById("fdate");
         var curepoch = parseInt(document.getElementById("curepoch").value, 10);
-        var epoch;
-
-        if (how == "plus")
-            epoch = objeval + amonth;
-        else if (how == 'minus') {
-            if (objeval > curepoch + amonth)
-                epoch = objeval - amonth;
-            else
-                epoch = objeval;
-            }
-        else
-            return;
-          
-        obje.value =  epoch;                
-        objd.value = ToLocalDate(epoch);
+    
+        var someDate = new Date(obj.value);
+        var epoch = someDate.getTime() / 1000;
+     
+        obje.value = epoch;                
 
         if (epoch < curepoch + (amonth/2)) {
-            objd.style.background = "red";
-            objd.title = "Expired";
+            obj.style.background = "red";
+            obj.title = "Expired";
         } else if (epoch < curepoch + amonth) {
-            objd.style.background = "yellow";
-            objd.title = "About to expire";
+            obj.style.background = "yellow";
+            obj.title = "About to expire";
         } else {
-            objd.style.background = "white";
-            objd.title = "";
+            obj.style.background = "white";
+            obj.title = "";
         }
     }
 
@@ -550,6 +539,7 @@
         var epoch = parseInt(obje.value, 10);
 
         objd.value = ToLocalDate(obje.value);
+        objd.min = ToLocalDate(curepoch);
 
         if (epoch < curepoch + (amonth/2)) {
             objd.style.background = "red";
@@ -659,7 +649,7 @@
 <table>
     <tr style="background-color: inherit;">
         <td style="width: 66%; border:none;">
-            <h3 translate="no" id="h3header"><!--#HNAME--> <!--#CURTM--></h3>
+            <h3 translate="no" id="h3header">x<!--#HNAME--> <!--#CURTM--></h3>
         </td>
 
         <td style="border:none">
@@ -838,7 +828,7 @@
             <div id="tdsDiv" translate="no"></div> <!-- inner-html updates -->
         </td>
         <td class="tdsTr" onmouseover="showKvalue('visible')" onmouseout="showKvalue('hidden')">
-            <span id="thumbwrap"><a class="thumb" alt=""><span><img src="tds.png" alt=""></span>Water Quality</a></span>
+            <span id="thumbwrap"><a class="thumb"><span><img src="tds.png" alt=""></span>Water Quality</a></span>
             <input id="kvalue" name="kvalue" onchange="updKValue(this)" title="TDS K-value trim +/- 0.05 step range is 0.6-2.0" type="number" min="0.6" max="2.0" step="0.05" value="<!--#KVAL-->">
         </td>
     </tr>
@@ -849,12 +839,10 @@
         <td title="See datasheet for sensor Q value">Frequency F=(<!--#FQV-->*Q)Q=L/MIN</td>
     </tr>
 
-    <tr>
+   <tr>
         <td><label for="fdate">Filter Replace date</label></td>
         <td>
-            <input type="text" readonly id="fdate" name="fdate" value="">
-            <button type="button" onclick="setFdate('plus')">+4W</button> 
-            <button type="button" onclick="setFdate('minus')">-4W</button> 
+            <input type="date" onchange="setFdate(this)" id="fdate" name="fdate" value="">
         </td>
         <td>Expiration date for filter</td>
     </tr>
@@ -902,7 +890,7 @@
 
 <div id="showGuages" style="scale: 0.9; width: max-content; visibility: hidden;">
     <table><tr style="background-color: inherit;">
-        <td style="border: none; width: 85%;"><h3 translate="no" id="h3Guageheader"></h3></td>
+        <td style="border: none; width: 85%;"><h3 translate="no" id="h3Guageheader">x</h3></td>
         <td  style="border: none"><input style="width: 32px;" title="Show as table" type="checkbox" onclick="showDefault(this)">Show detailes</td>
     </tr></table>
 
