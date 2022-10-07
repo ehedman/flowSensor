@@ -138,6 +138,24 @@
         
     }
 
+    #thumbwrap {
+	    position:relative; 
+    }
+
+    .thumb span { 
+        position: absolute;
+	    visibility:hidden;
+        left: -324px;
+        top: -180px;
+        border: 1px solid black;
+
+    }
+
+    .thumb:hover, .thumb:hover span { 
+	    visibility:visible;
+	    z-index:1;
+    }
+
     .buttons:hover {
         background-color: #ddd !important;
     }
@@ -256,8 +274,8 @@
                 var flrt = parseFloat(xmlDoc.getElementsByTagName("flrt")[0].childNodes[0].nodeValue);
                 var wtemp = parseFloat(xmlDoc.getElementsByTagName("temp")[0].childNodes[0].nodeValue);
                 var totvPo = parseInt(xmlDoc.getElementsByTagName("totv")[0].childNodes[0].nodeValue);
-                var tds = xmlDoc.getElementsByTagName("tds")[0].childNodes[0].nodeValue.trim();
-                document.getElementById("kvalue").value = xmlDoc.getElementsByTagName("kvalue")[0].childNodes[0].nodeValue.trim();
+                var tds = parseInt(xmlDoc.getElementsByTagName("tds")[0].childNodes[0].nodeValue.trim());
+                document.getElementById("kvalue").value = parseFloat(xmlDoc.getElementsByTagName("kvalue")[0].childNodes[0].nodeValue);
 
                 if (totvPo > totvPr && totvPr <= tnkv && flrt > 0.0) {
 
@@ -279,13 +297,15 @@
 
                 if (guageBlock == true) {
                     guageTank.refresh(tnkv-usedVolume, true);
-                    guageFlrt.refresh(flrt);
+                    guageFlrt.refresh(flrt, true);
 
-                    if (wtemp > 0 && parseFloat(tds) > 0) {
+                    if (tds > 0) {
                         document.getElementById("containerTds").style.visibility = 'visible';
-                        document.getElementById("containerTemp").style.visibility = 'visible';
-                        guageTemp.refresh(wtemp, true);                  
-                        guageTds.refresh(parseFloat(tds), true);
+                        guageTds.refresh(tds, true);
+                        if (wtemp > 0.0) {
+                            document.getElementById("containerTemp").style.visibility = 'visible';
+                            guageTemp.refresh(wtemp, true); 
+                        }                 
                     }
                 }
 
@@ -305,18 +325,19 @@
                     document.getElementById("h3Guageheader").innerHTML = hostname + " " + time;
                 }
 
-                if (tds !== "0") {          
+                if (tds != 0) {          
                     var cell = document.getElementsByClassName("tdsTr"); 
                     cell[0].style.display = "table-cell";
                     cell[1].style.display = "table-cell";
                     cell[2].style.display = "table-cell";
-                    setColor(parseInt(tds.trim())/600, tdsObj);
+                    setColor(tds/600, tdsObj);
                     var temp = "";
                     if (wtemp != 0) temp = " @ " + wtemp +"&#8451";
 
                     tdsObj.innerHTML = tds + "ppm" + temp;
                 }
                 document.getElementById("uptm").value = xmlDoc.getElementsByTagName("uptm")[0].childNodes[0].nodeValue.trim();
+
             } else if (this.readyState == 4 && this.status == 200 && urlIndx > UrlBase)
             {
                 urlIndx = UrlBase;
@@ -332,10 +353,10 @@
     {
         if (obj.value > curKValue) {
             urlIndx = urlCalUp;
-            curKValue += 0.1;
+            curKValue += 0.05;
         } else if (obj.value < curKValue) {
             urlIndx = urlCalDn;
-            curKValue -= 0.1;
+            curKValue -= 0.05;
         }
         clearInterval(timerObj);
         doAsynch = false;
@@ -517,6 +538,7 @@
         guageBlock = true;
         document.getElementById("showDetailes").style.display = 'none';
         document.getElementById("showGuages").style.display = 'block';
+        document.getElementById("showGuages").style.visibility = 'visible';
         obj.checked = false;
     }
 
@@ -815,8 +837,9 @@
         <td class="tdsTr">
             <div id="tdsDiv" translate="no"></div> <!-- inner-html updates -->
         </td>
-        <td class="tdsTr" onmouseover="showKvalue('visible')" onmouseout="showKvalue('hidden')" title="150-300: Good/Fair: 300+ Poor">
-            <input id="kvalue" onchange="updKValue(this)" title="TDS K-value trim +/- 0.1 step range is 0.6-2.0" type="number" min="0.6" max="2.0" step="0.1" value="<!--#KVAL-->">Water Quality
+        <td class="tdsTr" onmouseover="showKvalue('visible')" onmouseout="showKvalue('hidden')">
+            <span id="thumbwrap"><a class="thumb" alt=""><span><img src="tds.png" alt=""></span>Water Quality</a></span>
+            <input id="kvalue" name="kvalue" onchange="updKValue(this)" title="TDS K-value trim +/- 0.05 step range is 0.6-2.0" type="number" min="0.6" max="2.0" step="0.05" value="<!--#KVAL-->">
         </td>
     </tr>
 
@@ -877,9 +900,12 @@
 
 </div> <!-- show as tables -->
 
-<div id="showGuages" style="scale: 0.9; width: max-content;">
-    <h3 translate="no" style="margin:0;" id="h3Guageheader"><!--#HNAME--> <!--#CURTM--> </h3>
-    <input style="width: 32px;" title="Show as table" type="checkbox" onclick="showDefault(this)">Show detailes
+<div id="showGuages" style="scale: 0.9; width: max-content; visibility: hidden;">
+    <table><tr style="background-color: inherit;">
+        <td style="border: none; width: 85%;"><h3 translate="no" id="h3Guageheader"></h3></td>
+        <td  style="border: none"><input style="width: 32px;" title="Show as table" type="checkbox" onclick="showDefault(this)">Show detailes</td>
+    </tr></table>
+
     <div id="containerFlrt"></div>
     <div id="containerTank"></div>
     <div id="containerTds"></div>
@@ -890,7 +916,7 @@
 
     guageFlrt = new GaugeSVG({
 	    id: "containerFlrt",
-        value: <!--#FLRT-->,
+        value: 0,
 	    valueColor: "#444488",
 	    min: 0,
 	    max: 10,
@@ -899,7 +925,7 @@
 	    titleColor: "#8888cc",
 	    label: "L/M",
 	    labelColor: "#8888cc",
-	    gaugeWidthScale: 1.25,
+	    gaugeWidthScale: 0.75,
 	    gaugeBorderColor: "#222244",
 	    gaugeBorderWidth: 1.5,
 	    gaugeShadowColor: "#444488",
@@ -924,7 +950,7 @@
 	    titleColor: "#8888cc",
 	    label: "liters",
 	    labelColor: "#8888cc",
-	    gaugeWidthScale: 1.25,
+	    gaugeWidthScale: 0.75,
 	    gaugeBorderColor: "#222244",
 	    gaugeBorderWidth: 1.5,
 	    gaugeShadowColor: "#444488",
@@ -946,7 +972,6 @@
 	    gaugeWidthScale: 1.0,
 	    min: 4.0,
 	    max: 1000.0,
-	    //lowerActionLimit: 1,
 	    lowerWarningLimit: 30.0,
         upperWarningLimit: 400,
         upperActionLimit: 600,
@@ -954,6 +979,8 @@
 	    optimumRangeColor: "#88ff88",
 	    warningRangeColor: "#f4f444",
         canvasBackColor: "#f2f2f2",
+        gaugeBorderColor: "#222244",
+        gaugeBorderWidth: 1.5,
 	    actionRangeColor: "#ff8888"
     });
     
@@ -965,13 +992,14 @@
 	    gaugeWidthScale: 1.0,
 	    min: 1.0,
 	    max: 45.0,
-	    lowerActionLimit: 1,
 	    lowerWarningLimit: 3.0,
         upperWarningLimit: 30,
 	    needleColor: "#880088",
 	    optimumRangeColor: "#88ff88",
 	    warningRangeColor: "#f4f444",
         canvasBackColor: "#f2f2f2",
+        gaugeBorderColor: "#222244",
+        gaugeBorderWidth: 1.5,
 	    actionRangeColor: "#ff8888"
     });
 
@@ -986,7 +1014,7 @@ rebooted. You then have to regain the connection by joining your host to that ne
     timerObj = setInterval(function () {loadXMLDoc();}, 2000);
 </script>
 
-</div>
+</div> <!-- content -->
 </body>
 </html>
 
