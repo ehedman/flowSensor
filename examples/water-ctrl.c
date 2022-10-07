@@ -369,6 +369,7 @@ static void core1Thread(void)
         {
             int f = measureFrequency(HzmeasurePin, 1000);
 
+            sdata.flowRate = (f * 1 / pdata.sensFq);
             FlowFreq = f;   // Enter result to global space
         }
 
@@ -537,7 +538,6 @@ void water_ctrl(void)
             volTick = (1.0/60)/pdata.sensFq;    // sensFq can be updated from web. Re-evaluate here.
 
             if (FlowFreq > 1.0) {
-                sdata.flowRate = (FlowFreq * 1 / pdata.sensFq);
                 sessLitre = (sessTick * volTick);
                 used = sessLitre + pdata.totVolume;
                 if (used >= pdata.tankVolume) {
@@ -552,7 +552,7 @@ void water_ctrl(void)
                 printLog("REM=%.0fL", pdata.tankVolume - used);
                 sdata.totVolume = sessLitre + pdata.totVolume;
                 if (sdata.tdsValue != 0) {
-                    printLog("TDS=%.0fppm", sdata.tdsValue);
+                    printLog("TDS=%dppm", sdata.tdsValue);
                 }
                 DEV_SET_PWM(DEF_PWM);
 
@@ -584,7 +584,7 @@ void water_ctrl(void)
             sdata.totVolume = pdata.totVolume;
             pdata.gtotVolume += sessLitre;
             pdata.filterVolume += sessLitre;
-            sdata.flowRate = sessLitre = sessTick = 0;
+            sessLitre = sessTick = 0;
             delSave = 120;  // Assuming reuse anytime soon
             doSave = true;  // .. so don't be to agressive to save to flash
         }
@@ -735,7 +735,7 @@ void water_ctrl(void)
                 printLog("FXD=%s", buffer_t);
 
                 if (sdata.tdsValue != 0) {
-                    printLog("TDS=%.0fppm", sdata.tdsValue);
+                    printLog("TDS=%dppm", sdata.tdsValue);
                 } else {
                     printLog("FLV=%.0fL", pdata.filterVolume);
                 }

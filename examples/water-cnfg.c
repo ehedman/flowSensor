@@ -134,7 +134,7 @@ static bool netIsConnected = nOFF;
  * We're going to erase and reprogram a region 740k from the start of flash.
  * Once done, we can access this at XIP_BASE + 740k.
 */
-#define FLASH_TARGET_OFFSET (740 * 1024)    // Eventually move up as the application growes.
+#define FLASH_TARGET_OFFSET (1024 * 1024)    // Eventually move up as the application growes.
 
 static const uint8_t *flash_target_contents = (const uint8_t *) (XIP_BASE + FLASH_TARGET_OFFSET);
 
@@ -420,7 +420,7 @@ void tdsConvert(shared_data *sdata, persistent_data *pdata)
 
 	float ecValue=(133.42*voltage*voltage*voltage - 255.86*voltage*voltage + 857.39*voltage)*pdata->kValue;    // Before compensation
 	float ecValue25 = ecValue / (1.0+0.02*(sdata->waterTemp-25.0));  // After compensation (1.0+0.02*(Measured_Temperature-25.0))
-    sdata->tdsValue = ecValue25 * TdsFactor;
+    sdata->tdsValue = (int)(ecValue25 * TdsFactor);
 }
 
 #else /* HAS_TDS */
@@ -1125,5 +1125,4 @@ bool ping_status(void)
 }
 
 #endif /* LWIP_RAW */
-
 
