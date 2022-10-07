@@ -125,19 +125,21 @@ u16_t __time_critical_func(ssi_handler)(int iIndex, char *pcInsert, int iInsertL
             printed = snprintf(pcInsert, iInsertLen, "%.1f", sdata.flowRate);
         break;
         case TDS:  // TDS value
-            printed = snprintf(pcInsert, iInsertLen, "%.0f", sdata.tdsValue);
+            printed = snprintf(pcInsert, iInsertLen, "%d", sdata.tdsValue);
         break;
         case TEMP:  // Water temp
             printed = snprintf(pcInsert, iInsertLen, "%3.1f", sdata.waterTemp);
         break;
         case KVAL:  // K value calibration
-            printed = snprintf(pcInsert, iInsertLen, "%.1f", pdata.kValue);
+            printed = snprintf(pcInsert, iInsertLen, "%.2f", pdata.kValue);
         break;
         case KVUP:  // K value calibration Up
-            printed = snprintf(pcInsert, iInsertLen, "%.1f", pdata.kValue); if (pdata.kValue +0.1 < 2.1) {pdata.kValue += 0.1;}
+            if (pdata.kValue +0.05 < 2.1) {pdata.kValue += 0.05;}
+            printed = snprintf(pcInsert, iInsertLen, "%.2f", pdata.kValue);
         break;
         case KVDN:  // K value calibration Down
-            printed = snprintf(pcInsert, iInsertLen, "%.1f", pdata.kValue); if (pdata.kValue -0.1 > 0.5) {pdata.kValue -= 0.1;}
+            if (pdata.kValue -0.05 > 0.5) {pdata.kValue -= 0.05;}
+            printed = snprintf(pcInsert, iInsertLen, "%.2f", pdata.kValue);
         break;
         case VERS:  // Program version
             printed = snprintf(pcInsert, iInsertLen, "%.1f", pdata.version);
