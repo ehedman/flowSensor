@@ -26,12 +26,12 @@
 /*
  * The RTC hat is attached
  */
-#define HAS_RTC
+//#define HAS_RTC
 
 /**
  * An Gravity TDS meter is attached to GPIO 26
  */
-#define HAS_TDS
+//#define HAS_TDS
 
 /**
  * Support for temp sensor dsb18b20 and oterhers
@@ -89,7 +89,7 @@ typedef struct s_data {
     int     ssidCount;
     float   totVolume;
     float   flowRate;
-    float   tdsValue;
+    int     tdsValue;
     float   waterTemp;
     char    versionString[20];
     w_data  wfd[SSID_LIST];
