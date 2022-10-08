@@ -269,12 +269,13 @@
                 var fvol    = parseInt(document.getElementById("fvol").value, 10);
                 var tnkv    = parseInt(document.getElementById("tnkv").value, 10);
 
-                parser = new DOMParser();
-                xmlDoc = parser.parseFromString(this.responseText,"text/xml");
-                var flrt = parseFloat(xmlDoc.getElementsByTagName("flrt")[0].childNodes[0].nodeValue);
-                var wtemp = parseFloat(xmlDoc.getElementsByTagName("temp")[0].childNodes[0].nodeValue);
-                var totvPo = parseInt(xmlDoc.getElementsByTagName("totv")[0].childNodes[0].nodeValue);
-                var tds = parseInt(xmlDoc.getElementsByTagName("tds")[0].childNodes[0].nodeValue.trim());
+                parser      = new DOMParser();
+                xmlDoc      = parser.parseFromString(this.responseText,"text/xml");
+                var flrt    = parseFloat(xmlDoc.getElementsByTagName("flrt")[0].childNodes[0].nodeValue);
+                var wtemp   = parseFloat(xmlDoc.getElementsByTagName("temp")[0].childNodes[0].nodeValue);
+                var totvPo  = parseInt(xmlDoc.getElementsByTagName("totv")[0].childNodes[0].nodeValue, 10);
+                var tds     = parseInt(xmlDoc.getElementsByTagName("tds")[0].childNodes[0].nodeValue.trim(), 10);
+
                 document.getElementById("kvalue").value = parseFloat(xmlDoc.getElementsByTagName("kvalue")[0].childNodes[0].nodeValue);
 
                 if (totvPo > totvPr && totvPr <= tnkv && flrt > 0.0) {
@@ -296,7 +297,7 @@
                 }
 
                 if (guageBlock == true) {
-                    guageTank.refresh(tnkv-usedVolume, true);
+                    guageTank.refresh(tnkv-usedVolume, false);
                     guageFlrt.refresh(flrt, true);
 
                     if (tds > 0) {
@@ -675,6 +676,7 @@
 <input type="hidden" name="fage" id="fage" value="<!--#FAGE-->">
 <input type="hidden" id="curepoch" value="<!--#EPOCH-->">
 <input type="hidden" id="wifiscans" value="<!--#WSCAN-->">
+<input type="hidden" id="cou" name="cou" value="<!--#COU-->">
 <input type="hidden" name="apm" id="apMode" value="<!--#APM-->">
 <input type="hidden" id="net_debug" value="<!--#NDBG-->">
 
@@ -719,11 +721,9 @@
     </tr>
 
     <tr>
-        <td class="system"><label for="cou">Country Code</label></td>
+        <td class="system"><label for="couopt">Country Code</label></td>
         <td class="system">
-            <input type="text" readonly id="cou" name="cou" title="cyw43_country.h" value="<!--#COU-->">
-            <select  style="text-transform: lowercase;" name="couopt" id="couopt" title="CountryCode" onchange="upd_country(this)">
-                <option selected value="0">Select new</option>
+            <select  style="text-transform: lowercase; width: 51%;" name="couopt" id="couopt" title="CountryCode" onchange="upd_country(this)">
                 <option value="22616">WORLDWIDE</option>
                 <option value="21825">AUSTRALIA</option>
                 <option value="21569">AUSTRIA</option>

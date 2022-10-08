@@ -148,7 +148,7 @@
         if (day.length < 2) 
             day = '0' + day;
 
-        return [day, month, year.toString().substring(2,4)].join('/');
+        return [year, month, day].join('-');
     }
 
     function ToLocalDate (inDate) {
@@ -171,7 +171,7 @@
         document.getElementById("tnkv").innerHTML="USE="+tnkv+"L";
         document.getElementById("rem").innerHTML="REM="+(tvol-tnkv)+"L";
         document.getElementById("flv").innerHTML="FLV="+flv+"L";
-        document.getElementById("fxd").innerHTML="FXD="+ToLocalDate(fxd);      
+        document.getElementById("fxd").innerHTML="FX="+ToLocalDate(fxd);      
     }
 
     function googleTranslateElementInit(stat)
@@ -264,7 +264,7 @@
         <td translate="no" colspan="2">REM=&numero;L</td><td>Currently remaining tank volume</td>
     </tr>
     <tr>
-        <td translate="no" colspan="2">FXD=DATE</td><td>Filter expiration date (D/M/Y)</td>
+        <td translate="no" colspan="2">FX=DATE</td><td title="Replaced with TDS if data is avaiable">Filter expiration date (Y-M-D)</td>
     </tr>
     <tr>
         <td translate="no" colspan="2">FLV=&numero;L</td><td>Volume passed through filter</td>
