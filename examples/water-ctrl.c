@@ -239,6 +239,19 @@ static void clearLog(int hdrColor)
 }
 
 /**
+ * Return filter age string
+ */
+static char *getFltTime()
+{
+    struct tm *info_t;
+    static char buffer_t[60];
+
+    info_t = localtime( &pdata.filterAge);
+    strftime(buffer_t, sizeof(buffer_t), "%Y-%m-%d", info_t);
+    return buffer_t;
+}
+
+/**
  * Display initialization.
  * Display: https://www.waveshare.com/wiki/Pico-LCD-1.14 (V2)
  * SDK: https://www.waveshare.com/w/upload/0/06/Pico-LCD-1.14.zip
@@ -444,9 +457,8 @@ static bool waterCtrlInit(void)
  */
 void water_ctrl(void)
 {
-    static time_t curtime;
-    static struct tm *info_t;
     static char buffer_t[60];
+    static time_t curtime;
     float volTick = 0.0;
     float sessLitre = 0.0;
     int delSave = 0;
@@ -557,13 +569,11 @@ void water_ctrl(void)
                 DEV_SET_PWM(DEF_PWM);
 
             } else if (tmo-- <= 0) {
-                info_t = localtime( &pdata.filterAge);
-                strftime(buffer_t, sizeof(buffer_t), "%d/%m/%y", info_t);
                 clearLog(HDR_INFO);
                 printHdr("No FLow");
                 printLog("USED=%.0fL", used);
                 printLog("REM=%.0fL", pdata.tankVolume - used);
-                printLog("FXD=%s", buffer_t);
+                printLog("FX=%s", getFltTime());
                 sleep_ms(2000);
                 break;
             }
@@ -709,9 +719,7 @@ void water_ctrl(void)
                 printLog("New period");
                 pdata.filterAge = time(NULL) + FLTR_LIFETIME;
                 pdata.filterVolume = 0.0;
-                info_t = localtime( &pdata.filterAge);
-                strftime(buffer_t, sizeof(buffer_t), "%m/%d/%y", info_t);
-                printLog("FXD=%s", buffer_t);
+                printLog("FX=%s", getFltTime());
                 printLog("FLV=0.0");
                 DEV_SET_PWM(DEF_PWM);
                 sleep_ms(2000);
@@ -730,9 +738,7 @@ void water_ctrl(void)
                 printHdr("STATUS");
                 printLog("USE=%.0fL", pdata.totVolume);
                 printLog("REM=%.0fL", pdata.tankVolume - pdata.totVolume);
-                info_t = localtime(&pdata.filterAge);
-                strftime(buffer_t, sizeof(buffer_t), "%d/%m/%y", info_t);
-                printLog("FXD=%s", buffer_t);
+                printLog("FX=%s", getFltTime());
 
                 if (sdata.tdsValue != 0) {
                     printLog("TDS=%dppm", sdata.tdsValue);
