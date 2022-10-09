@@ -425,7 +425,7 @@ void tdsConvert(shared_data *sdata, persistent_data *pdata)
 
 #else /* HAS_TDS */
 
-void tdsConvert(shared_data *sdata)
+void tdsConvert(shared_data *sdata, persistent_data *pdata)
 {
     APP_UNUSED_ARG(sdata);
 }
