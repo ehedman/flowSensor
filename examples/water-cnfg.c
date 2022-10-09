@@ -428,6 +428,7 @@ void tdsConvert(shared_data *sdata, persistent_data *pdata)
 void tdsConvert(shared_data *sdata, persistent_data *pdata)
 {
     APP_UNUSED_ARG(sdata);
+    APP_UNUSED_ARG(pdata);
 }
 
 #endif /* HAS_TDS */
