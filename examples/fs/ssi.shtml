@@ -235,15 +235,18 @@
     var timerObj;
     const amonth = 2628288;
     const UrlBase  = 0;
-    const urlCalUp = 1;
-    const urlCalDn = 2;
+    const urlKCalUp = 1;
+    const urlKCalDn = 2;
+    const urlQCalup = 3;
+    const urlQCaldn = 4;
     var urlIndx = UrlBase;
-    const urlDest = ["ssi_xml.shtml", "calUp_xml.shtml", "calDn_xml.shtml"];
+    const urlDest = ["ssi_xml.shtml", "calKUp_xml.shtml", "calKDn_xml.shtml", "calQUp_xml.shtml", "calQDn_xml.shtml"];
     var doAsynch = true;
     var guageBlock = false;
     var usedVolume = <!--#TOTV-->;
 
     var curKValue = <!--#KVAL-->;
+    var curQValue = <!--#FQV-->
 
     function setColor(value, obj)
     {
@@ -277,6 +280,7 @@
                 var tds     = parseInt(xmlDoc.getElementsByTagName("tds")[0].childNodes[0].nodeValue.trim(), 10);
 
                 document.getElementById("kvalue").value = parseFloat(xmlDoc.getElementsByTagName("kvalue")[0].childNodes[0].nodeValue);
+                document.getElementById("fqv").value = parseFloat(xmlDoc.getElementsByTagName("qvalue")[0].childNodes[0].nodeValue);
 
                 if (totvPo > totvPr && totvPr <= tnkv && flrt > 0.0) {
 
@@ -353,11 +357,25 @@
     function updKValue(obj)
     {
         if (obj.value > curKValue) {
-            urlIndx = urlCalUp;
+            urlIndx = urlKCalUp;
             curKValue += 0.05;
         } else if (obj.value < curKValue) {
-            urlIndx = urlCalDn;
+            urlIndx = urlKCalDn;
             curKValue -= 0.05;
+        }
+        clearInterval(timerObj);
+        doAsynch = false;
+        loadXMLDoc();
+    }
+
+    function updQValue(obj)
+    {
+        if (obj.value > curQValue) {
+            urlIndx = urlQCalup;
+            curQValue += 0.2;
+        } else if (obj.value < curQValue) {
+            urlIndx = urlQCaldn;
+            curQValue -= 0.2;
         }
         clearInterval(timerObj);
         doAsynch = false;
@@ -835,7 +853,7 @@
 
     <tr>
         <td><label for="fqv">F/Q Value for Sensor</label></td>
-        <td><input type="number" min="4" max="14" title="Float 4-14: 0.2 incr" id="fqv" name="fqv" step="0.2" oninput="validity.valid||(value='');" value="<!--#FQV-->"></td>
+        <td><input type="number" min="4" max="14" onchange="updQValue(this)" title="Float 4-14: 0.2 incr" id="fqv" name="fqv" step="0.2" oninput="validity.valid||(value='');" value="<!--#FQV-->"></td>
         <td title="See datasheet for sensor Q value">Frequency F=(<!--#FQV-->*Q)Q=L/MIN</td>
     </tr>
 

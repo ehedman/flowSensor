@@ -37,6 +37,8 @@
     TAG(KVAL)  \
     TAG(KVUP)  \
     TAG(KVDN)  \
+    TAG(QVUP)  \
+    TAG(QVDN)  \
     TAG(VERS)  \
     TAG(IPAD)  \
     TAG(IPAGW) \

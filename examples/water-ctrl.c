@@ -382,7 +382,7 @@ static void core1Thread(void)
         {
             int f = measureFrequency(HzmeasurePin, 1000);
 
-            sdata.flowRate = (f * 1 / pdata.sensFq);
+            sdata.flowRate = f * (1 / pdata.sensFq);
             FlowFreq = f;   // Enter result to global space
         }
 

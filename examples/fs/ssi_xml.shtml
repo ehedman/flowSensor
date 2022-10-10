@@ -23,4 +23,7 @@
     <temp>
         <!--#TEMP-->
     </temp>
+    <qvalue>
+        <!--#FQV-->
+    </qvalue>
 </waterctrl>

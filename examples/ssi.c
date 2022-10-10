@@ -70,6 +70,7 @@ u16_t __time_critical_func(ssi_handler)(int iIndex, char *pcInsert, int iInsertL
 #ifdef NET_DEBUG
     static int httpdReq;
 #endif
+ float fs = 0;
 
     if (iIndex == CURTM) { // CURTM expected to occur only one time and early in ssi.shtml
         if (sdata.inactivityTimer < SHOUR/2) {  // Don't go dormant anythime soon ..
@@ -114,6 +115,14 @@ u16_t __time_critical_func(ssi_handler)(int iIndex, char *pcInsert, int iInsertL
         break;
         case FQV:   // Q/F value
             printed = snprintf(pcInsert, iInsertLen, "%.1f", pdata.sensFq);
+        break;
+        case QVUP:  // Q/F value calibration Up
+            if (pdata.sensFq +0.2 < 14.2) {pdata.sensFq += 0.2;}
+            printed = snprintf(pcInsert, iInsertLen, "%.2f", pdata.sensFq);
+        break;
+        case QVDN:  // Q/F value calibration Down
+            if (pdata.sensFq -0.2 > 4.2) {pdata.sensFq -= 0.2;}
+            printed = snprintf(pcInsert, iInsertLen, "%.2f", pdata.sensFq);
         break;
         case FAGE:  // Filter age
             printed = snprintf(pcInsert, iInsertLen, "%llu", pdata.filterAge);
