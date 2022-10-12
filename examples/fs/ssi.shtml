@@ -6,6 +6,7 @@
     <meta name="description" content="hedmanshome.se Marine Water FlowMeter">
     <meta name="author" content="Erland Hedman">
     <meta name="license" content="Free">
+    <meta name="version" content="1.2">
     <meta name="license" content="gaugeSVG CPOL 1.0.2">
     <script src="gaugeSVG.js"></script>
     <link rel="icon" href="drop.ico">

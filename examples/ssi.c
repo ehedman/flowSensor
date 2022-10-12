@@ -5,8 +5,8 @@
 * | Info        :   
 * | Depends     :   Rasperry Pi Pico W and LwIP
 *----------------
-* |	This version:   V1.1
-* | Date        :   2022-09-22
+* |	This version:   V1.2
+* | Date        :   2022-10-10
 * | Info        :   Build context is within the Waveshare Pico SDK c/examples
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
