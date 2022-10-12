@@ -232,21 +232,26 @@
 
     <script>
 
-    var timerObj;
-    const amonth = 2628288;
-    const UrlBase  = 0;
-    const urlKCalUp = 1;
-    const urlKCalDn = 2;
-    const urlQCalup = 3;
-    const urlQCaldn = 4;
-    var urlIndx = UrlBase;
-    const urlDest = ["ssi_xml.shtml", "calKUp_xml.shtml", "calKDn_xml.shtml", "calQUp_xml.shtml", "calQDn_xml.shtml"];
-    var doAsynch = true;
-    var guageBlock = false;
-    var usedVolume = <!--#TOTV-->;
+    var TimerObj;
+    const AMonth = 2628288;
 
-    var curKValue = <!--#KVAL-->;
-    var curQValue = <!--#FQV-->
+    const UrlBase   = 0;
+    const UrlKCalUp = 1;
+    const UrlKCalDn = 2;
+    const UrlQCalup = 3;
+    const UrlQCaldn = 4;
+    var   UrlIndx   = UrlBase;
+    const UrlDest = ["ssi_xml.shtml", "calKUp_xml.shtml", "calKDn_xml.shtml", "calQUp_xml.shtml", "calQDn_xml.shtml"];
+    var DoAsynch   = true;
+
+    var GuageBlock = false;
+
+    var UsedVolume  = <!--#TOTV-->;
+    var GrandTov    = <!--#GTOTV-->;
+    var FilterVol   = <!--#FVOL-->;
+
+    var CurKValue   = <!--#KVAL-->;
+    var CurQValue   = <!--#FQV-->;
 
     function setColor(value, obj)
     {
@@ -264,19 +269,17 @@
 
         xhttp.onreadystatechange = function()
         {
-            if (this.readyState == 4 && this.status == 200 && urlIndx == UrlBase)
+            if (this.readyState == 4 && this.status == 200 && UrlIndx == UrlBase)
             {
                 var totvObj = document.getElementById("totv");
-                var totvPr  = parseInt(totvObj.value, 10);
-                var gtotv   = parseInt(document.getElementById("gtotv").value, 10);
-                var fvol    = parseInt(document.getElementById("fvol").value, 10);
-                var tnkv    = parseInt(document.getElementById("tnkv").value, 10);
+                var totvPr  = parseFloat(totvObj.value);
+                var tnkv    = parseFloat(document.getElementById("tnkv").value);
 
                 parser      = new DOMParser();
                 xmlDoc      = parser.parseFromString(this.responseText,"text/xml");
                 var flrt    = parseFloat(xmlDoc.getElementsByTagName("flrt")[0].childNodes[0].nodeValue);
                 var wtemp   = parseFloat(xmlDoc.getElementsByTagName("temp")[0].childNodes[0].nodeValue);
-                var totvPo  = parseInt(xmlDoc.getElementsByTagName("totv")[0].childNodes[0].nodeValue, 10);
+                var totvPo  = parseFloat(xmlDoc.getElementsByTagName("totv")[0].childNodes[0].nodeValue);
                 var tds     = parseInt(xmlDoc.getElementsByTagName("tds")[0].childNodes[0].nodeValue.trim(), 10);
 
                 document.getElementById("kvalue").value = parseFloat(xmlDoc.getElementsByTagName("kvalue")[0].childNodes[0].nodeValue);
@@ -284,14 +287,14 @@
 
                 if (totvPo > totvPr && totvPr <= tnkv && flrt > 0.0) {
 
-                    usedVolume = totvPr;
-                    usedVolume  += totvPo - totvPr;
-                    gtotv += totvPo - totvPr;
-                    fvol  += totvPo - totvPr; 
+                    UsedVolume = totvPr;
+                    UsedVolume  += totvPo - totvPr;
+                    GrandTov += totvPo - totvPr;
+                    FilterVol  += totvPo - totvPr; 
 
-                    document.getElementById("gtotv").value = gtotv;
-                    document.getElementById("fvol").value = fvol;
-                    totvObj.value = usedVolume;
+                    document.getElementById("gtotv").value = Math.floor(GrandTov);
+                    document.getElementById("fvol").value = Math.floor(FilterVol);
+                    totvObj.value = UsedVolume;
 
                     update_vols();
                     document.getElementById("submitButt").style.visibility = "hidden";
@@ -300,8 +303,8 @@
                     document.getElementById("submitButt").style.visibility = "visible";
                 }
 
-                if (guageBlock == true) {
-                    guageTank.refresh(tnkv-usedVolume, false);
+                if (GuageBlock == true) {
+                    guageTank.refresh(Math.round(tnkv-UsedVolume), false);
                     guageFlrt.refresh(flrt, true);
 
                     if (tds > 0) {
@@ -326,7 +329,7 @@
                 }
 
                 document.getElementById("h3header").innerHTML = hostname + " " + time + fl;
-                if (guageBlock == true) {
+                if (GuageBlock == true) {
                     document.getElementById("h3Guageheader").innerHTML = hostname + " " + time;
                 }
 
@@ -343,42 +346,42 @@
                 }
                 document.getElementById("uptm").value = xmlDoc.getElementsByTagName("uptm")[0].childNodes[0].nodeValue.trim();
 
-            } else if (this.readyState == 4 && this.status == 200 && urlIndx > UrlBase)
+            } else if (this.readyState == 4 && this.status == 200 && UrlIndx > UrlBase)
             {
-                urlIndx = UrlBase;
-                doAsynch = true;
-                timerObj = setInterval(function () {loadXMLDoc();}, 2000);
+                UrlIndx = UrlBase;
+                DoAsynch = true;
+                TimerObj = setInterval(function () {loadXMLDoc();}, 2000);
             }
         };
-        xhttp.open("GET", urlDest[urlIndx], doAsynch);
+        xhttp.open("GET", UrlDest[UrlIndx], DoAsynch);
         xhttp.send();
     }
 
     function updKValue(obj)
     {
-        if (obj.value > curKValue) {
-            urlIndx = urlKCalUp;
-            curKValue += 0.05;
-        } else if (obj.value < curKValue) {
-            urlIndx = urlKCalDn;
-            curKValue -= 0.05;
+        if (obj.value > CurKValue) {
+            UrlIndx = UrlKCalUp;
+            CurKValue += 0.05;
+        } else if (obj.value < CurKValue) {
+            UrlIndx = UrlKCalDn;
+            CurKValue -= 0.05;
         }
-        clearInterval(timerObj);
-        doAsynch = false;
+        clearInterval(TimerObj);
+        DoAsynch = false;
         loadXMLDoc();
     }
 
     function updQValue(obj)
     {
-        if (obj.value > curQValue) {
-            urlIndx = urlQCalup;
-            curQValue += 0.2;
-        } else if (obj.value < curQValue) {
-            urlIndx = urlQCaldn;
-            curQValue -= 0.2;
+        if (obj.value > CurQValue) {
+            UrlIndx = UrlQCalup;
+            CurQValue += 0.2;
+        } else if (obj.value < CurQValue) {
+            UrlIndx = UrlQCaldn;
+            CurQValue -= 0.2;
         }
-        clearInterval(timerObj);
-        doAsynch = false;
+        clearInterval(TimerObj);
+        DoAsynch = false;
         loadXMLDoc();
     }
 
@@ -438,10 +441,10 @@
      
         obje.value = epoch;                
 
-        if (epoch < curepoch + (amonth/2)) {
+        if (epoch < curepoch + (AMonth/2)) {
             obj.style.background = "red";
             obj.title = "Expired";
-        } else if (epoch < curepoch + amonth) {
+        } else if (epoch < curepoch + AMonth) {
             obj.style.background = "yellow";
             obj.title = "About to expire";
         } else {
@@ -499,15 +502,16 @@
 
     function update_vols()
     {
-        var totv = parseInt(document.getElementById("totv").value, 10);
-        var tnkv = parseInt(document.getElementById("tnkv").value, 10);
-        if (totv >= tnkv)
+        var totv = parseFloat(document.getElementById("totv").value);
+        var tnkv = parseFloat(document.getElementById("tnkv").value);
+        if (totv >= tnkv) {          
             document.getElementById("totv").value = totv = tnkv;
+        }
         var vleft = Math.round(((tnkv-totv)/tnkv)*100);
         document.getElementById("totv").title = "Volume left " + vleft + "%";
         document.getElementById("tnkv").title = "Volume left " + vleft + "%";
         document.getElementById("remv").title = "Volume left " + vleft + "%";
-        document.getElementById("remv").value = tnkv - totv;
+        document.getElementById("remv").value = Math.round(tnkv - totv);
     }
 
     function showAll(obj)
@@ -523,7 +527,7 @@
 
     function showLess(obj)
     {
-        guageBlock = false;
+        GuageBlock = false;
         var cell = document.getElementsByClassName("system"); 
         Array.prototype.forEach.call(cell, function(el) {
             el.style.display = "none";
@@ -535,7 +539,7 @@
 
     function showDefault(obj)
     {
-        guageBlock = false;
+        GuageBlock = false;
         document.getElementById("showDetailes").style.display = 'block';
         document.getElementById("showGuages").style.display = 'none';
         obj.checked = false;
@@ -543,7 +547,7 @@
 
     function showDash(obj)
     {
-        guageBlock = true;
+        GuageBlock = true;
         document.getElementById("showDetailes").style.display = 'none';
         document.getElementById("showGuages").style.display = 'block';
         document.getElementById("showGuages").style.visibility = 'visible';
@@ -560,10 +564,10 @@
         objd.value = ToLocalDate(obje.value);
         objd.min = ToLocalDate(curepoch);
 
-        if (epoch < curepoch + (amonth/2)) {
+        if (epoch < curepoch + (AMonth/2)) {
             objd.style.background = "red";
             objd.title = "Expired";
-        } else if (epoch < curepoch + amonth) {
+        } else if (epoch < curepoch + AMonth) {
             objd.style.background = "yellow";
             objd.title = "About to expire";
         } else {
@@ -824,7 +828,7 @@
 
     <tr>
         <td><label for="totv">Volume used</label></td>
-        <td><input type="number"  min="0" title="In Litres" id="totv" name="totv" oninput="validity.valid||(value='');" onchange="update_vols()" value="<!--#TOTV-->"></td>
+        <td><input type="number"  step="0.2" min="0" title="In Litres" id="totv" name="totv" oninput="validity.valid||(value='');" onchange="update_vols()" value="<!--#TOTV-->"></td>
         <td>Volume currently consumed</td>
     </tr>
 
@@ -852,9 +856,9 @@
     </tr>
 
     <tr>
-        <td><label for="fqv">F/Q Value for Sensor</label></td>
+        <td><label for="fqv">Q Value for Sensor</label></td>
         <td><input type="number" min="4" max="14" onchange="updQValue(this)" title="Float 4-14: 0.2 incr" id="fqv" name="fqv" step="0.2" oninput="validity.valid||(value='');" value="<!--#FQV-->"></td>
-        <td title="See datasheet for sensor Q value">Frequency F=(<!--#FQV-->*Q)Q=L/MIN</td>
+        <td title="See datasheet for sensor Q value">Q factor for the flow sensor</td>
     </tr>
 
    <tr>
@@ -1017,7 +1021,7 @@ rebooted. You then have to regain the connection by joining your host to that ne
 
 <script>
     document.getElementById("showGuages").style.display = 'none';
-    timerObj = setInterval(function () {loadXMLDoc();}, 2000);
+    TimerObj = setInterval(function () {loadXMLDoc();}, 2000);
 </script>
 
 </div> <!-- content -->

@@ -560,8 +560,8 @@ void water_ctrl(void)
                 printHdr("Flowing");
                 //printf("FlowFreq=%dHz\n", FlowFreq);
                 printLog("FLOW=%.1fL/M", sdata.flowRate);
-                printLog("USED=%.0fL", used);
-                printLog("REM=%.0fL", pdata.tankVolume - used);
+                printLog("USED=%.1fL", used);
+                printLog("REM=%.1fL", pdata.tankVolume - used);
                 sdata.totVolume = sessLitre + pdata.totVolume;
                 if (sdata.tdsValue != 0) {
                     printLog("TDS=%dppm", sdata.tdsValue);
@@ -571,8 +571,8 @@ void water_ctrl(void)
             } else if (tmo-- <= 0) {
                 clearLog(HDR_INFO);
                 printHdr("No FLow");
-                printLog("USED=%.0fL", used);
-                printLog("REM=%.0fL", pdata.tankVolume - used);
+                printLog("USED=%.1fL", used);
+                printLog("REM=%.1fL", pdata.tankVolume - used);
                 printLog("FX=%s", getFltTime());
                 sleep_ms(2000);
                 break;
@@ -736,8 +736,8 @@ void water_ctrl(void)
                 printf("Last lwip exhausting reboot time: %s", ctime_r(&pdata.rebootTime, buffer_t));
 #endif
                 printHdr("STATUS");
-                printLog("USE=%.0fL", pdata.totVolume);
-                printLog("REM=%.0fL", pdata.tankVolume - pdata.totVolume);
+                printLog("USE=%.1fL", pdata.totVolume);
+                printLog("REM=%.1fL", pdata.tankVolume - pdata.totVolume);
                 printLog("FX=%s", getFltTime());
 
                 if (sdata.tdsValue != 0) {

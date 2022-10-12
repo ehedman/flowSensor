@@ -70,7 +70,6 @@ u16_t __time_critical_func(ssi_handler)(int iIndex, char *pcInsert, int iInsertL
 #ifdef NET_DEBUG
     static int httpdReq;
 #endif
- float fs = 0;
 
     if (iIndex == CURTM) { // CURTM expected to occur only one time and early in ssi.shtml
         if (sdata.inactivityTimer < SHOUR/2) {  // Don't go dormant anythime soon ..
@@ -105,7 +104,7 @@ u16_t __time_critical_func(ssi_handler)(int iIndex, char *pcInsert, int iInsertL
             printed = snprintf(pcInsert, iInsertLen, "%lu", pdata.country);
         break;
         case TOTV:  // Total consumed volume
-            printed = snprintf(pcInsert, iInsertLen, "%.0f", sdata.totVolume);
+            printed = snprintf(pcInsert, iInsertLen, "%.1f", sdata.totVolume);
         break;
         case GTOTV: // Grand Total volume consumed
             printed = snprintf(pcInsert, iInsertLen, "%.0f", pdata.gtotVolume);
