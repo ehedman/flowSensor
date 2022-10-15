@@ -71,10 +71,8 @@ u16_t __time_critical_func(ssi_handler)(int iIndex, char *pcInsert, int iInsertL
     static int httpdReq;
 #endif
 
-    if (iIndex == CURTM) { // CURTM expected to occur only one time and early in ssi.shtml
-        if (sdata.inactivityTimer < SHOUR/2) {  // Don't go dormant anythime soon ..
-            sdata.inactivityTimer = SHOUR/2;
-        }
+    if (iIndex == CURTM) { // CURTM expected to occur early in ssi.shtml
+        sdata.xActivity = true;
         curtime=time(NULL);
         memset(wscans,0, sizeof(wscans));
         for (int i=0; i < sdata.ssidCount; i++) {

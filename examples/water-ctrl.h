@@ -34,10 +34,11 @@
 //#define HAS_TDS
 
 /**
- * Support for temp sensor dsb18b20 and oterhers
+ * Support for temp sensor dsb18b20 and oterhers or NTC
  */
 #if defined HAS_TDS
-#define HAS_TEMPS
+//#define HAS_TEMP_ONEWIRE
+#define HAS_TEMP_NTC
 #endif
 
 /**
@@ -81,7 +82,8 @@ typedef struct wifi_data {
 
 typedef struct s_data {
     time_t  startTime;
-    time_t inactivityTimer;
+    time_t  inactivityTimer;
+    bool    xActivity;
     int     outOfPcb;
     int     lostPing;
     int     versioMajor;
@@ -138,7 +140,7 @@ extern bool     netNTP_connect(persistent_data *pdata);
 extern bool     wifi_connect(persistent_data *pdata);
 extern bool     net_checkconnection(void);
 extern void     net_setconnection(bool mode);
-extern void     ping_send_now(void);
+extern void     ping_send_now(shared_data *sdata);
 extern bool     ping_status(void);
 extern void     wifi_scan(int scanTurns, shared_data *sdata);
 extern bool     wifi_find(char *ap, shared_data *sdata);
@@ -201,7 +203,8 @@ extern void     init_httpd(bool doIt);
 #define TZ_RZONE        (2*SHOUR) 
 #endif
 #define FLTR_LIFETIME   (6*SMONTH)
-#define INACTIVITY_TIME (SHOUR*4)
+#define INACTIVITY_TIME (SHOUR*4)           // Go dormant after this time
+#define ACTIVITY_TIME   60                  // Keep all functions alive due to external events
 
 /**
  * Private wrapper for time()

@@ -44,7 +44,7 @@
 #include <pico/cyw43_arch.h>
 #endif /* HAS_NET */
 
-#ifdef HAS_TEMPS
+#ifdef HAS_TEMP_ONEWIRE
 #include "one_wire_c.h"
 #endif
 
@@ -80,8 +80,6 @@
 
 #define LCD_HEIGHT          LCD_1IN14_HEIGHT
 #define LCD_WIDTH           LCD_1IN14_WIDTH
-
-#define POLLRATE            250     // Main loop interval in ms
 
 static UWORD *BlackImage;
 static char HdrStr[100]         = { "Header" };
@@ -120,11 +118,15 @@ static uint16_t FlowFreq =          0;  // Live flow frequency
  * ADC TDS sensing
  */
 #if defined HAS_TDS
-static const uint8_t adcPin =       26;
+static const uint8_t adcTdsPin      =   26;
 #endif
 
-#ifdef HAS_TEMPS
-static const uint8_t tempPin =      22;
+#ifdef HAS_TEMP_ONEWIRE
+static const uint8_t oneWTempPin    =   22;
+#endif
+
+#ifdef HAS_TEMP_NTC
+static const uint8_t adcTempNtcPin  =   27;
 #endif
 
 /**
@@ -315,11 +317,15 @@ static void gpioInit(void)
         gpio_pull_up(ResetButt);
 #if defined HAS_TDS
         adc_init();
-        adc_gpio_init(adcPin);
-        adc_select_input(0);
+        adc_gpio_init(adcTdsPin);
 #endif
-#if defined HAS_TEMPS
-        one_wire_init(tempPin);
+
+#if defined HAS_TEMP_ONEWIRE
+        one_wire_init(oneWTempPin);
+#endif
+
+#if defined HAS_TEMP_NTC
+        adc_gpio_init(adcTempNtcPin);
 #endif
 }
 
@@ -373,6 +379,7 @@ static void core1Thread(void)
 {
 
     multicore_fifo_push_blocking(FLAG_VALUE);
+    int activity = ACTIVITY_TIME;
 
     uint32_t g = multicore_fifo_pop_blocking();
 
@@ -380,9 +387,19 @@ static void core1Thread(void)
 
         while(1) 
         {
+            if (sdata.xActivity == true && --activity <= 0) {
+                sdata.xActivity = false;
+                activity = ACTIVITY_TIME;
+                sdata.inactivityTimer = INACTIVITY_TIME;
+            }
+                
             int f = measureFrequency(HzmeasurePin, 1000);
 
             sdata.flowRate = f * (1 / pdata.sensFq);
+            if ( f > 1 ) {
+                sdata.xActivity = true;
+                activity = ACTIVITY_TIME;
+            }
             FlowFreq = f;   // Enter result to global space
         }
 
@@ -471,6 +488,7 @@ void water_ctrl(void)
     sdata.versioMajor =  DigiFlow_VERSION_MAJOR;
     sdata.versionMinor = DigiFlow_VERSION_MINOR;
     sdata.inactivityTimer = INACTIVITY_TIME;
+    sdata.xActivity = true;
     sprintf(sdata.versionString, "%d.%d", sdata.versioMajor, sdata.versionMinor);
 
     memset(&pdata, 0, sizeof(persistent_data));
@@ -612,7 +630,7 @@ void water_ctrl(void)
             DEV_SET_PWM(0); 
 
             if (pingInterval++ >= 20) {
-                ping_send_now();
+                ping_send_now(&sdata);
                 pingInterval = 0;
             } else sleep_ms(1000);
 
@@ -638,9 +656,8 @@ void water_ctrl(void)
 #endif /* NET_SANITY_CHECK */
 
             if (sdata.outOfPcb > MAX_BAD_PCBS || lostPing > MAX_BAD_PINGS) {
-                    sdata.inactivityTimer = 1;  //  Time to attempt a reboot
+                sdata.inactivityTimer = 1;  //  Time to attempt a reboot
             }
-
 
             if (tryScan++ > 24) {
                 memset(sdata.wfd, 0, sizeof(sdata.wfd));
@@ -662,6 +679,7 @@ void water_ctrl(void)
             }
 
             if (!gpio_get(JsRight)) {   // Go AP mode
+                sdata.xActivity = true;
                 clearLog(HDR_INFO);
                 printHdr("Go AP mode");
                 printLog("PW=%s", APMODE_PASSWORD);
@@ -681,6 +699,7 @@ void water_ctrl(void)
             }
 
             if (!gpio_get(JsLeft)) {    // Go STA mode
+                sdata.xActivity = true;
                 clearLog(HDR_INFO);
                 printHdr("Go STA mode");
                 printLog("%s", pdata.ssid); // ssid possibly truncated to MAX_CHAR
@@ -714,6 +733,7 @@ void water_ctrl(void)
             }
 
             if (!gpio_get(JsOk)) {                  // Reset filter data  andvolume (filter replaced)
+                sdata.xActivity = true;
                 clearLog(HDR_INFO);
                 printHdr("NEW FILTER");
                 printLog("New period");
@@ -725,11 +745,11 @@ void water_ctrl(void)
                 sleep_ms(2000);
                 delSave = 1;
                 doSave = true;
-                sdata.inactivityTimer = INACTIVITY_TIME;
                 continue;
             }
  
             if (!gpio_get(StatusButt)) {
+                sdata.xActivity = true;
                 clearLog(HDR_INFO);
 #if defined HAS_NET && defined NET_DEBUG  // Show statistics to console only
                 printf("\nLost ping sequences=%d, out of pcbs=%d, lifetime lwip exhausting reboots=%d\n", sdata.lostPing, sdata.outOfPcb, pdata.rebootCount);
@@ -760,11 +780,11 @@ void water_ctrl(void)
                     printLog("FLTR near FXD");
                     sleep_ms(5000);
                 }
-                sdata.inactivityTimer = INACTIVITY_TIME;
                 continue;
             }
 
             if (!gpio_get(JsUp) && pdata.sensFq < 14.2) {              // Fine-tune the sensors' Q value +
+                sdata.xActivity = true;
                 clearLog(HDR_INFO);
                 printHdr("FQ INC");
                 pdata.sensFq += 0.20;
@@ -773,11 +793,11 @@ void water_ctrl(void)
                 printLog("New FQ = %.2f", pdata.sensFq);
                 DEV_SET_PWM(DEF_PWM);
                 sleep_ms(2000);
-                sdata.inactivityTimer = INACTIVITY_TIME;
                 continue;
             }
 
             if (!gpio_get(JsDown) && pdata.sensFq > 4.2) {     // Fine-tune the sensors' Q value -
+                sdata.xActivity = true;
                 clearLog(HDR_INFO);
                 printHdr("FQ DEC");
                 pdata.sensFq -= 0.20;
@@ -786,11 +806,11 @@ void water_ctrl(void)
                 printLog("New FQ = %.2f", pdata.sensFq);
                 DEV_SET_PWM(DEF_PWM);
                 sleep_ms(2000);
-                sdata.inactivityTimer = INACTIVITY_TIME;
                 continue;
             }
 
             if (!gpio_get(ResetButt)) {         // Reset total volume
+                sdata.xActivity = true;
                 clearLog(HDR_ERROR);
                 printHdr("RESET");
                 DEV_SET_PWM(DEF_PWM);

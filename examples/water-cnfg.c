@@ -57,8 +57,10 @@
 #include "dhcpserver.h"
 #endif
 
-#ifdef HAS_TEMPS
+#ifdef HAS_TEMP_ONEWIRE
 #include "one_wire_c.h"
+#elif defined HAS_TEMP_NTC
+#include <math.h>
 #endif
 
 #ifndef HAS_NET
@@ -378,8 +380,8 @@ static void set_rtc(struct tm *utc, time_t *epoch)
 /**
  * Return water temperature
  */
-#ifdef HAS_TEMPS
-static float getTemperature(void)
+#ifdef HAS_TEMP_ONEWIRE
+static double getTemperature(void)
 {
     static rom_address_t address;
     static bool init;
@@ -393,25 +395,108 @@ static float getTemperature(void)
 
     return one_wire_temperature(&address);
 }
+
+#elif defined HAS_TEMP_NTC
+
+/**
+ * For TDS probes with an integrated NTC thermistor
+ *
+ * Quick Schematic of the resistance network
+ *
+ *       (Ground) ----\/\/\/-------|-------\/\/\/---- V_supply (3.3V)
+ *                  R_balance      |     R_thermistor
+ *                                 |
+ *                         Pico Analog Pin input
+ */
+#define     t_bufsz     10      // Samples to collect an average temp
+
+static double getTemperature(void)
+{
+    /**
+     * courtesy of https://www.allaboutcircuits.com/projects/measuring-temperature-with-an-ntc-thermistor/
+     */
+
+    // variables that live in this Steinhart–Hart equation
+    double   rThermistor = 0;     // Holds thermistor resistance value
+    double   tKelvin     = 0;     // Holds calculated temperature
+    double   tCelsius    = 0;     // Hold temperature in celsius
+    uint16_t adcAverage  = 0;     // Holds the average voltage measurement
+
+    static uint16_t t_buf[t_bufsz];
+    static int t_indx;
+    static int firstRun;
+
+    // resistor value within the resistor divider
+    const double BALANCE_RESISTOR   = 10000.0;
+
+    // ADC 12-bit conversion for Pico
+    const double MAX_ADC            = 4095.0;
+
+    // Beta value of the NTC from datashet
+    const double BETA               = 3974.0;
+
+    // Typical room temperature in Kelvin
+    const double ROOM_TEMP          = 298.15;  
+
+    // Typical resistance value of the NTC in room temperature (25oC)
+    const double RESISTOR_ROOM_TEMP = 10000.0;
+
+    // Select ADC1 for this operation
+    adc_select_input(1);
+
+    // Fill the t_buf[] on the first run
+    firstRun = firstRun == 0? t_bufsz : 1;
+
+    for (int i = 0; i < firstRun; i++) {
+        if (t_indx < t_bufsz) {
+            t_buf[t_indx++] = (uint16_t)adc_read();
+        } else t_indx = 0;
+
+        for (int i = 0; i < t_bufsz; i++) {
+            adcAverage += t_buf[i];
+        }
+        adcAverage /= t_bufsz;  // Get the average of these samples
+    }
+
+    // Here we calculate the thermistor’s resistance 
+    rThermistor = BALANCE_RESISTOR * ( (MAX_ADC / adcAverage) - 1);
+
+    // Here is the Beta equation
+    tKelvin = (BETA * ROOM_TEMP) / 
+    (BETA + (ROOM_TEMP * log(rThermistor / RESISTOR_ROOM_TEMP)));
+
+    // convert kelvin to celsius 
+    tCelsius = tKelvin - 273.15;
+
+    printf("adcAverage = %d  -  NTC R = %.0f -  temp = %.1f                    \r", adcAverage, rThermistor , tCelsius); fflush(stdout);
+
+    return tCelsius;
+}
+
 #else
-static float getTemperature(void)
+static double getTemperature(void)
 {
     return 20.0;
 
 }
-#endif /* HAS_TEMPS */
+#endif /* HAS_TEMP_ONEWIRE / HAS_TEMP_NTC */
 
 /**
  * Return TDS value for a Gravity TDS module
  * TDS module output voltage: 0 ~ 2.3V @ Range: 0 ~ 1000ppm
 */
 void tdsConvert(shared_data *sdata, persistent_data *pdata)
-{
+{    
+    if (sdata->xActivity == false) {
+        return;
+    }
+
+    adc_select_input(0);
     const float TdsFactor = 0.5;                // TDS value is half of the electrical conductivity value, that is: TDS = EC / 2. 
     //pdata->kValue                             // K value of the probe, eventually calibrated in a known (xxx ppm) water buffer solution
-    const float adcConv =  3.3f / (1 << 12);    // 2-bit conversion, assume max value == ADC_VREF == 3.3 V for pico
+    const float adcConv =  3.3f / (1 << 12);    // 12-bit conversion, assume max value == ADC_VREF == 3.3 V for pico
     float voltage = adc_read() * adcConv;       // Voltage reading copensated for 3.3 volt
-    float temperature = getTemperature();       // The temp sensors value in Co   
+    double temperature = getTemperature();      // The temp sensors value in Co   
 
     if (voltage > 3.3 || temperature > 55.0 || temperature < 1) {
         return; // A glitch of bad readings
@@ -798,6 +883,10 @@ void wifi_scan(int scanTurns, shared_data *sdata)
     absolute_time_t scan_test = nil_time;
     bool scan_in_progress = false;
 
+    if (sdata->xActivity == false) {
+        return;
+    }
+
     for (int i = 0; i < scanTurns; i++) {
         if (absolute_time_diff_us(get_absolute_time(), scan_test) < 0) {
             if (!scan_in_progress) {
@@ -962,7 +1051,7 @@ void goDormant(uint8_t dpin, persistent_data *pdata, shared_data *sdata, int los
  * must be receptive for ICMP accesses.
  *
  * The application API for this features are:
- * void ping_send_now(void)
+ * void ping_send_now(shared_data *sdata)
  * bool ping_status(void)
  */
 #if LWIP_RAW // Should be configured for in lwipopts.h
@@ -1092,8 +1181,13 @@ static void ping_raw_init(const char *ip)
 /**
  * User entry to send a (one) ping package
  */
-void ping_send_now(void)
+void ping_send_now(shared_data *sdata)
 {
+    if (sdata->xActivity == false) {
+        goodPing = true;
+        return;
+    }
+
     if (pRawisInit == true) {
         LWIP_ASSERT("ping_pcb != NULL", ping_pcb != NULL);
         sys_timeout(PING_DELAY, ping_timeout, ping_pcb);
