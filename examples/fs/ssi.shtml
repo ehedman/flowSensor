@@ -183,6 +183,15 @@
         font-size: inherit;
     }
 
+    #pfCheck {
+        width: 50px;
+        float: right;
+        padding: 0;
+        border: none;
+        background: inherit;
+        visibility: hidden;
+    }
+
     #kvalue {
         width: 50px;
         float: right;
@@ -501,6 +510,11 @@
         document.getElementById("kvalue").style.visibility = arg;
     }
 
+    function showPf(arg)
+    {
+        document.getElementById("pfCheck").style.visibility = arg;
+    }
+
     function update_vols()
     {
         var totv = parseFloat(document.getElementById("totv").value);
@@ -657,6 +671,10 @@
             document.getElementById("apMode").value = "2";
         }
 
+        if (document.getElementById("pfCheck").checked == true) {
+            document.getElementById("pfMode").value = "1";
+        }
+
         return true;
     }
 
@@ -701,6 +719,7 @@
 <input type="hidden" id="wifiscans" value="<!--#WSCAN-->">
 <input type="hidden" id="cou" name="cou" value="<!--#COU-->">
 <input type="hidden" name="apm" id="apMode" value="<!--#APM-->">
+<input type="hidden" name="pfm" id="pfMode" value="<!--#PFM-->">
 <input type="hidden" id="net_debug" value="<!--#NDBG-->">
 
 <script>
@@ -879,7 +898,9 @@
     <tr>
         <td class="system"><label for="vers">Firmware Version</label></td>
         <td class="system"><input type="text" style="background: lightgray" id="vers" readonly value="<!--#VERS-->"></td>
-        <td class="system">Version of this application</td>
+        <td class="system" onmouseover="showPf('visible')" onmouseout="showPf('hidden')">Version of this application
+            <input title="Pico firmware upgrade" type="checkbox" id="pfCheck">
+        </td>
     </tr>
     <tr>
         <td class="system"><label for="ipad">I.P address</label></td>

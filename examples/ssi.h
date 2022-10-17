@@ -10,6 +10,7 @@
 #include <pico/cyw43_arch.h>
 #include <lwip/apps/httpd.h>
 #include <hardware/watchdog.h>
+#include <pico/bootrom.h>
 
 /**
  * Plug in this when not in AP mode
@@ -50,6 +51,7 @@
     TAG(NDBG)  \
     TAG(TRNS)  \
     TAG(APM)   \
+    TAG(PFM)   \
 
 #define GENERATE_ENUM(ENUM) ENUM,
 #define GENERATE_STRING(STRING) #STRING,

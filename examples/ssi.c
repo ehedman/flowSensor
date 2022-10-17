@@ -177,6 +177,9 @@ u16_t __time_critical_func(ssi_handler)(int iIndex, char *pcInsert, int iInsertL
         case APM: // AP mode ?
             printed = snprintf(pcInsert, iInsertLen, "%s", pdata.apMode == true? "1" : "0");
         break;
+        case PFM: // Pico firmware mode ?
+            printed = snprintf(pcInsert, iInsertLen, "0");
+        break;
         case NDBG: // Some debug data
 #ifdef NET_DEBUG
             printed = snprintf(pcInsert, iInsertLen, "%d,%d,%d,%d,%llu", sdata.lostPing, sdata.outOfPcb, pdata.rebootCount, httpdReq, pdata.rebootTime);
@@ -208,7 +211,7 @@ void init_httpd(bool doIt)
     }
 
     /**
-     * http_set_ssi_handler Parameters:apMode
+     * http_set_ssi_handler Parameters:
      *    ssi_handler	the SSI handler function
      *    tags	        an array of SSI tag strings to search for in SSI-enabled files
      *    num_tags	    number of tags in the 'tags' array
@@ -330,6 +333,7 @@ err_t httpd_post_receive_data(void *connection, struct pbuf *p)
     err_t ret;
     u16_t token, value_token, len_token;
     int apMode = 0;
+    int pfMode = 0;
     static char buf_t[100];
 
     LWIP_ASSERT("NULL pbuf", p != NULL);
@@ -384,6 +388,7 @@ err_t httpd_post_receive_data(void *connection, struct pbuf *p)
                         case FVOL:  pdata.filterVolume = (float)atof(dec);   break;
                         case KVAL:  pdata.kValue = (float)atof(dec);         break;
                         case APM:   apMode = atoi(dec);                      break;
+                        case PFM:   pfMode = atoi(dec);                      break;
                         default:    /* unknown/ignored tag */                break;
                     }      
                 }
@@ -399,6 +404,13 @@ err_t httpd_post_receive_data(void *connection, struct pbuf *p)
         }
 
         sdata.totVolume = pdata.totVolume;
+
+        if (pfMode == 1) {
+            write_flash(&pdata);
+            reset_usb_boot(0,0);    // Reboot to firmware mode (BOOTSEL)
+            while(1);
+            /** NOT REACHED **/
+        }
 
         if (apMode == 2 && pdata.apMode == true) {
             pdata.apMode = false;
