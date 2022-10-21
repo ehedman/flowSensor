@@ -6,15 +6,16 @@ Marine water flow sensor and meter
 - Waveshare Precision RTC module
 - Waveshare 1.14" color display
 - A water flow sensor
-- A water temperature sensor DS18B20
-- A TDS sensor (Water Quality Sensor)
+- A TDS sensor Module (Gravity TDS module)
+- A Conductivity probe (Hanna HI7634-00)
 
 ### Features
 - Monitor filter elapse time
 - Monitor total flow through filter
 - Monitor volume / time
-- Monitor TDS Water Quality
-- Real-time trim of TDS K-value from web page
+- Monitor TDS water Quality and water temperature
+- Real-time trim of TDS probe K-value from web page
+- Real-time trim of Q value for the flow sensor from web page
 - Live graphical dashboard
 - Near end of filter life alert
 - End of filter life alert
