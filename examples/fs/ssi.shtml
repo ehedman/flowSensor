@@ -899,7 +899,7 @@
         <td class="system"><label for="vers">Firmware Version</label></td>
         <td class="system"><input type="text" style="background: lightgray" id="vers" readonly value="<!--#VERS-->"></td>
         <td class="system" onmouseover="showPf('visible')" onmouseout="showPf('hidden')">Version of this application
-            <input title="Pico firmware upgrade" type="checkbox" id="pfCheck">
+            <input title="Pico firmware upgrade mode on submit" type="checkbox" id="pfCheck">
         </td>
     </tr>
     <tr>
