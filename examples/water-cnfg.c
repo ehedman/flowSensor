@@ -416,27 +416,28 @@ static double getTemperature(void)
      * courtesy of https://www.allaboutcircuits.com/projects/measuring-temperature-with-an-ntc-thermistor/
      */
 
-    // variables that live in this Steinhart–Hart equation
-    double   rThermistor = 0;     // Holds thermistor resistance value
-    double   tKelvin     = 0;     // Holds calculated temperature
-    double   tCelsius    = 0;     // Hold temperature in celsius
-    uint16_t adcAverage  = 0;     // Holds the average voltage measurement
+    // Variables that live in this Steinhart–Hart equation
+    double   rThermistor = 0;   // Holds thermistor resistance value
+    double   tKelvin     = 0;   // Holds calculated temperature
+    double   tCelsius    = 0;   // Hold temperature in celsius
+    uint16_t adcAverage  = 0;   // Holds the average voltage measurement
+    uint16_t adcOffset   = 12;  // ADC low offset error in ticks
 
     static uint16_t t_buf[t_bufsz];
     static int t_indx;
     static int firstRun;
 
-    // resistor value within the resistor divider
+    // Resistor value within the resistor divider
     const double BALANCE_RESISTOR   = 10000.0;
 
     // ADC 12-bit conversion for Pico
     const double MAX_ADC            = 4095.0;
 
     // Beta value of the NTC from datashet
-    const double BETA               = 3974.0;
+    const double BETA               = 4385.0;
 
     // Typical room temperature in Kelvin
-    const double ROOM_TEMP          = 298.15;  
+    const double ROOM_TEMP          = 298.15;
 
     // Typical resistance value of the NTC in room temperature (25oC)
     const double RESISTOR_ROOM_TEMP = 10000.0;
@@ -449,26 +450,26 @@ static double getTemperature(void)
 
     for (int i = 0; i < firstRun; i++) {
         if (t_indx < t_bufsz) {
-            t_buf[t_indx++] = (uint16_t)adc_read();
+            t_buf[t_indx++] = adc_read();
         } else t_indx = 0;
 
         for (int i = 0; i < t_bufsz; i++) {
             adcAverage += t_buf[i];
         }
         adcAverage /= t_bufsz;  // Get the average of these samples
+        adcAverage -= adcOffset;
     }
 
-    // Here we calculate the thermistor’s resistance 
+    // Here we calculate the thermistor’s resistance
     rThermistor = BALANCE_RESISTOR * ( (MAX_ADC / adcAverage) - 1);
 
     // Here is the Beta equation
-    tKelvin = (BETA * ROOM_TEMP) / 
-    (BETA + (ROOM_TEMP * log(rThermistor / RESISTOR_ROOM_TEMP)));
+    tKelvin = (BETA * ROOM_TEMP) / (BETA + (ROOM_TEMP * log(rThermistor / RESISTOR_ROOM_TEMP)));
 
-    // convert kelvin to celsius 
-    tCelsius = tKelvin - 273.15;
+    // Convert kelvin to celsius
+    tCelsius = (tKelvin - 273.15)-1.6;
 
-    printf("adcAverage = %d  -  NTC R = %.0f -  temp = %.1f                    \r", adcAverage, rThermistor , tCelsius); fflush(stdout);
+    //printf("adcAverage = %d  -  NTC R = %.0f -  temp = %.1f                    \r", adcAverage, rThermistor , tCelsius); fflush(stdout);
 
     return tCelsius;
 }
@@ -481,9 +482,13 @@ static double getTemperature(void)
 }
 #endif /* HAS_TEMP_ONEWIRE / HAS_TEMP_NTC */
 
+
 /**
  * Return TDS value for a Gravity TDS module
  * TDS module output voltage: 0 ~ 2.3V @ Range: 0 ~ 1000ppm
+ * Note: The TDS probe deliverred with the Gravity module had linearity
+ * deviations when calibrated against both 84 and 1413 uS buffer solution.
+ * The Hanna HI 7634-00 however, was perfect and it has an integrated NTC as well.
 */
 void tdsConvert(shared_data *sdata, persistent_data *pdata)
 {    
@@ -492,11 +497,12 @@ void tdsConvert(shared_data *sdata, persistent_data *pdata)
     }
 
     adc_select_input(0);
-    const float TdsFactor = 0.5;                // TDS value is half of the electrical conductivity value, that is: TDS = EC / 2. 
-    //pdata->kValue                             // K value of the probe, eventually calibrated in a known (xxx ppm) water buffer solution
-    const float adcConv =  3.3f / (1 << 12);    // 12-bit conversion, assume max value == ADC_VREF == 3.3 V for pico
-    float voltage = adc_read() * adcConv;       // Voltage reading copensated for 3.3 volt
-    double temperature = getTemperature();      // The temp sensors value in Co   
+    const float adcOffset = 0.010;                      // ADC low offset error in volt
+    const float TdsFactor = 0.5;                        // TDS value is half of the electrical conductivity value, that is: TDS = EC / 2.
+    //pdata->kValue                                     // K value of the probe, eventually calibrated in a known (xxx ppm) water buffer solution
+    const float adcConv =  3.3f / (1 << 12);            // 12-bit conversion, assume max value == ADC_VREF == 3.3 V for pico
+    float voltage = (adc_read() * adcConv)-adcOffset;   // Voltage reading copensated for 3.3 volt
+    double temperature = getTemperature();              // The temp sensors value in Co
 
     if (voltage > 3.3 || temperature > 55.0 || temperature < 1) {
         return; // A glitch of bad readings
@@ -506,6 +512,7 @@ void tdsConvert(shared_data *sdata, persistent_data *pdata)
 	float ecValue=(133.42*voltage*voltage*voltage - 255.86*voltage*voltage + 857.39*voltage)*pdata->kValue;    // Before compensation
 	float ecValue25 = ecValue / (1.0+0.02*(sdata->waterTemp-25.0));  // After compensation (1.0+0.02*(Measured_Temperature-25.0))
     sdata->tdsValue = (int)(ecValue25 * TdsFactor);
+
 }
 
 #else /* HAS_TDS */
